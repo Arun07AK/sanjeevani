@@ -27,6 +27,22 @@
   }
   a { color: var(--green); }
 
+  /* kill-switch banner strip */
+  .killbanner {
+    display: none;
+    background: repeating-linear-gradient(45deg, var(--red), var(--red) 14px, #e85b5b 14px, #e85b5b 28px);
+    color: #2a0808;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-align: center;
+    padding: 7px 16px;
+    font-size: 13px;
+    text-transform: uppercase;
+    animation: kbpulse 1.6s ease-in-out infinite;
+  }
+  body.killed .killbanner { display: block; }
+  @keyframes kbpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.72; } }
+
   header {
     display: flex;
     align-items: center;
@@ -40,25 +56,13 @@
   .brand h1 { font-size: 19px; margin: 0; letter-spacing: 0.3px; }
   .brand .tag { color: var(--muted); font-size: 12px; }
 
-  .tiles { display: flex; gap: 12px; margin-left: auto; flex-wrap: wrap; }
-  .tile {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 8px 14px;
-    min-width: 86px;
-    text-align: center;
-  }
-  .tile .v { font-size: 18px; font-weight: 700; }
-  .tile .l { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .tile.green .v { color: var(--green); }
-  .tile.saffron .v { color: var(--saffron); }
-
   .kill {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
     font-size: 12px; color: var(--muted); cursor: pointer;
-    user-select: none;
+    user-select: none; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); transition: border-color 0.2s, background 0.2s;
   }
+  .kill:hover { border-color: var(--muted); }
   .switch {
     width: 40px; height: 22px; border-radius: 12px;
     background: rgba(159,180,214,0.25); position: relative;
@@ -71,13 +75,37 @@
   }
   .kill.on .switch { background: var(--red); }
   .kill.on .switch::after { left: 20px; }
-  .kill.on { color: var(--red); font-weight: 600; }
+  .kill.on { color: var(--red); font-weight: 700; border-color: var(--red); background: rgba(255,107,107,0.12); }
+
+  /* metrics row */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    padding: 16px 22px 4px;
+  }
+  @media (max-width: 900px) { .metrics { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 520px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .tile .v { font-size: 22px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tile .l { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+  .tile .cap { font-size: 9.5px; color: var(--muted); margin-top: 5px; opacity: 0.85; line-height: 1.35; }
+  .tile.green .v { color: var(--green); }
+  .tile.saffron { border-color: rgba(255,181,71,0.4); }
+  .tile.saffron .v { color: var(--saffron); }
+  .tile.flash { animation: tileflash 0.9s ease; }
+  @keyframes tileflash { 0% { box-shadow: 0 0 0 0 rgba(46,230,166,0.5); } 100% { box-shadow: 0 0 0 8px rgba(46,230,166,0); } }
 
   main {
     display: grid;
     grid-template-columns: minmax(560px, 1.35fr) minmax(360px, 1fr);
     gap: 18px;
-    padding: 18px 22px;
+    padding: 14px 22px 22px;
     align-items: start;
   }
   @media (max-width: 1040px) { main { grid-template-columns: 1fr; } }
@@ -92,14 +120,34 @@
     font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px;
     color: var(--muted); margin: 0; padding: 12px 16px;
     border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
   }
+  .panel > h2 .count { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: none; letter-spacing: 0; margin-left: auto; }
+
+  /* fleet toolbar */
+  .toolbar { padding: 10px 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 9px; }
+  .search {
+    width: 100%; background: var(--bg); border: 1px solid var(--line);
+    color: var(--ink); border-radius: 8px; padding: 7px 11px; font: inherit; font-size: 13px;
+  }
+  .search::placeholder { color: var(--muted); }
+  .search:focus { outline: none; border-color: var(--green); }
+  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chiprow .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; align-self: center; margin-right: 2px; }
+  .fchip {
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--line); background: transparent; color: var(--muted);
+    cursor: pointer; user-select: none; transition: all 0.15s;
+  }
+  .fchip:hover { color: var(--ink); border-color: var(--muted); }
+  .fchip.active { background: rgba(46,230,166,0.16); color: var(--green); border-color: rgba(46,230,166,0.5); }
 
   /* fleet table */
-  .tablewrap { overflow-x: auto; max-height: 74vh; }
+  .tablewrap { overflow-x: auto; max-height: 66vh; }
   table { border-collapse: collapse; width: 100%; font-size: 13px; }
   th, td { padding: 8px 10px; text-align: left; white-space: nowrap; }
   th {
-    position: sticky; top: 0; background: var(--surface);
+    position: sticky; top: 0; background: var(--surface); z-index: 1;
     color: var(--muted); font-weight: 600; font-size: 11px;
     text-transform: uppercase; letter-spacing: 0.4px;
     cursor: pointer; border-bottom: 1px solid var(--line);
@@ -108,11 +156,19 @@
   tbody tr { border-bottom: 1px solid var(--line); cursor: pointer; }
   tbody tr:hover { background: rgba(46,230,166,0.06); }
   tbody tr.sel { background: rgba(46,230,166,0.12); }
+  tbody tr.dim { opacity: 0.5; }
+  tbody tr.dim:hover { opacity: 0.75; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .emptyrow td { text-align: center; color: var(--muted); padding: 26px 10px; }
 
   .chip {
     display: inline-block; padding: 2px 8px; border-radius: 999px;
     font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+  .optbadge {
+    display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+    background: rgba(159,180,214,0.18); color: var(--muted);
   }
   .risk { display: flex; align-items: center; gap: 6px; }
   .riskbar { width: 60px; height: 7px; border-radius: 4px; background: rgba(159,180,214,0.2); overflow: hidden; }
@@ -121,12 +177,21 @@
   /* journey panel */
   .jbody { padding: 14px 16px; }
   .empty { color: var(--muted); text-align: center; padding: 40px 10px; }
+  .jname { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .jsub { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
   .signals {
     display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
     font-size: 12.5px; margin-bottom: 14px;
   }
   .signals .k { color: var(--muted); }
-  .signals .row { display: flex; justify-content: space-between; gap: 10px; }
+  .signals .row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .dbtbadge {
+    display: inline-block; padding: 1px 7px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+  }
+  .dbtbadge.interrupted { background: rgba(255,107,107,0.18); color: var(--red); }
+  .dbtbadge.linked { background: rgba(46,230,166,0.18); color: var(--green); }
+  .dbtbadge.none { background: rgba(159,180,214,0.15); color: var(--muted); }
   .actions { display: flex; gap: 10px; margin-bottom: 16px; }
   button {
     font: inherit; font-weight: 600; font-size: 13px;
@@ -145,6 +210,25 @@
   .banner.manual_review { background: rgba(255,181,71,0.18); color: var(--saffron); }
   .banner.other { background: rgba(159,180,214,0.15); color: var(--muted); }
 
+  /* audit / timeline shared */
+  .section-h {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted); margin: 18px 0 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-h::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .rungroup { margin-bottom: 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .rungroup > summary {
+    list-style: none; cursor: pointer; padding: 9px 12px; background: var(--bg);
+    display: flex; align-items: center; gap: 8px; font-size: 12px;
+  }
+  .rungroup > summary::-webkit-details-marker { display: none; }
+  .rungroup > summary::before { content: "▸"; color: var(--muted); font-size: 10px; transition: transform 0.15s; }
+  .rungroup[open] > summary::before { transform: rotate(90deg); }
+  .rungroup > summary .rtitle { font-weight: 700; }
+  .rungroup > summary .rmeta { color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .rungroup > summary .rdot { width: 8px; height: 8px; border-radius: 50%; }
+  .rungroup .timeline { padding: 12px 12px 4px 24px; }
+
   .timeline { position: relative; padding-left: 20px; }
   .timeline::before {
     content: ""; position: absolute; left: 6px; top: 4px; bottom: 4px;
@@ -160,6 +244,8 @@
     width: 10px; height: 10px; border-radius: 50%;
     background: var(--green); box-shadow: 0 0 0 3px var(--surface);
   }
+  .ev.pulse::before { animation: dotpulse 1.1s ease-in-out infinite; }
+  @keyframes dotpulse { 0%, 100% { box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px rgba(46,230,166,0.5); } 50% { box-shadow: 0 0 0 3px var(--surface), 0 0 0 9px rgba(46,230,166,0); } }
   .ev .head { display: flex; align-items: center; gap: 8px; }
   .ev .step { font-weight: 700; font-size: 12px; letter-spacing: 0.4px; }
   .ev .att {
@@ -172,24 +258,37 @@
     padding: 8px 12px; margin-top: 6px; font-size: 12.5px;
     white-space: pre-wrap; word-break: break-word;
   }
+  audio { width: 100%; margin-top: 6px; height: 34px; }
 </style>
 </head>
 <body>
+<div class="killbanner">⛔ Kill switch active — all journeys halt at the next step</div>
+
 <header>
   <div class="brand">
     <h1>Sanjeevani</h1>
     <span class="tag">Dormant-account revival agent · SBI</span>
   </div>
-  <div class="tiles" id="tiles"></div>
-  <div class="kill" id="kill" title="Halt all agent runs">
+  <div class="kill" id="kill" title="Halt all agent runs at the next step">
     <span id="killlabel">Kill-switch</span>
     <span class="switch"></span>
   </div>
 </header>
 
+<div class="metrics" id="metrics"></div>
+
 <main>
   <section class="panel">
-    <h2>Fleet</h2>
+    <h2>Fleet <span class="count" id="fleetcount"></span></h2>
+    <div class="toolbar">
+      <input class="search" id="search" type="search" placeholder="Search by name or ID…" autocomplete="off" />
+      <div class="chiprow" id="statuschips">
+        <span class="lbl">Status</span>
+      </div>
+      <div class="chiprow" id="blockerchips">
+        <span class="lbl">Blocker</span>
+      </div>
+    </div>
     <div class="tablewrap">
       <table id="fleet">
         <thead>
@@ -229,10 +328,22 @@ let selected = null;
 let sortKey = "risk_score";
 let sortDesc = true;
 let streaming = false;
+let killed = false;
+let search = "";
+let fStatus = "";   // "" = all
+let fBlocker = "";  // "" = all
+let metricsTimer = null;
 
 // ---- formatting helpers
 const rupee = (n) => "₹" + Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
-const cap = (s) => (s ? s.replace(/_/g, " ") : "—");
+const cap = (s) => (s ? String(s).replace(/_/g, " ") : "—");
+
+const LANG_NAME = {
+  en: "English", hi: "Hindi", te: "Telugu",
+  ta: "Tamil", bn: "Bengali", mr: "Marathi",
+  kn: "Kannada", ml: "Malayalam", gu: "Gujarati", pa: "Punjabi",
+};
+const langName = (c) => LANG_NAME[c] || (c || "—");
 
 // One hue per blocker for chips.
 const BLOCKER_HUE = {
@@ -249,9 +360,9 @@ const STATUS_COLOR = {
   at_risk: "var(--saffron)", manual_review: "var(--saffron)",
   opted_out: "var(--muted)", halted: "var(--muted)", active: "var(--green)",
 };
+function statusColor(s) { return STATUS_COLOR[s] || "var(--muted)"; }
 function statusChip(s) {
-  const c = STATUS_COLOR[s] || "var(--muted)";
-  return `<span class="chip" style="background:${c};color:#0a1e3f;filter:saturate(1.1)">${cap(s)}</span>`;
+  return `<span class="chip" style="background:${statusColor(s)};color:#0a1e3f;filter:saturate(1.1)">${cap(s)}</span>`;
 }
 
 function riskBar(score) {
@@ -260,51 +371,119 @@ function riskBar(score) {
   return `<span class="risk"><span class="riskbar"><i style="width:${s}%;background:${color}"></i></span><span>${s}</span></span>`;
 }
 
-// ---- metrics + kill-switch
-async function loadMetrics() {
-  const m = await (await fetch(API + "/api/metrics")).json();
-  $("#tiles").innerHTML = `
-    <div class="tile"><div class="v">${m.total}</div><div class="l">Fleet</div></div>
-    <div class="tile"><div class="v">${m.inoperative}</div><div class="l">Inoperative</div></div>
-    <div class="tile green"><div class="v">${m.reactivated}</div><div class="l">Reactivated</div></div>
-    <div class="tile saffron"><div class="v">${rupee(m.payout_estimate_inr)}</div><div class="l">Payout est.</div></div>`;
+// ---- metrics
+async function loadMetrics(flash = false) {
+  let m;
+  try { m = await (await fetch(API + "/api/metrics")).json(); }
+  catch { return; }
+  const pct = Math.round((m.reactivation_rate || 0) * 1000) / 10;
+  $("#metrics").innerHTML = `
+    <div class="tile green" data-key="reactivated"><div class="v">${m.reactivated}</div><div class="l">Reactivated</div></div>
+    <div class="tile" data-key="rate"><div class="v">${pct}%</div><div class="l">Reactivation rate</div></div>
+    <div class="tile green" data-key="dbt"><div class="v">${m.dbt_restored}</div><div class="l">DBT restored</div></div>
+    <div class="tile saffron" data-key="payout">
+      <div class="v">${rupee(m.payout_estimate_inr)}</div>
+      <div class="l">Est. RBI payout</div>
+      <div class="cap">RBI Accelerated Payout scheme, FY25-26 tiers</div>
+    </div>
+    <div class="tile" data-key="inoperative"><div class="v">${m.inoperative}</div><div class="l">Inoperative remaining</div></div>
+    <div class="tile" data-key="manual"><div class="v">${m.manual_review}</div><div class="l">Manual review</div></div>`;
+  if (flash) {
+    ["reactivated", "dbt", "payout"].forEach((k) => {
+      const t = $(`[data-key="${k}"]`, $("#metrics"));
+      if (t) { t.classList.remove("flash"); void t.offsetWidth; t.classList.add("flash"); }
+    });
+  }
 }
 
+// ---- kill-switch
 async function loadKill() {
-  const { on } = await (await fetch(API + "/api/killswitch")).json();
-  setKillUI(on);
+  try {
+    const { on } = await (await fetch(API + "/api/killswitch")).json();
+    setKillUI(on);
+  } catch { /* leave UI as-is */ }
 }
 function setKillUI(on) {
-  const el = $("#kill");
-  el.classList.toggle("on", on);
+  killed = on;
+  $("#kill").classList.toggle("on", on);
+  document.body.classList.toggle("killed", on);
   $("#killlabel").textContent = on ? "KILL-SWITCH ON" : "Kill-switch";
+  // reflect on any visible run button
+  const btn = $("#runbtn");
+  if (btn && !streaming) {
+    const acc = accounts.find((a) => a.id === selected);
+    btn.disabled = on || (acc ? !!acc.opted_out : false);
+    btn.title = on ? "Disabled — kill switch is active" : "";
+  }
 }
 $("#kill").addEventListener("click", async () => {
   const on = !$("#kill").classList.contains("on");
-  const r = await fetch(API + "/api/killswitch", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ on }),
-  });
-  setKillUI((await r.json()).on);
+  try {
+    const r = await fetch(API + "/api/killswitch", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ on }),
+    });
+    setKillUI((await r.json()).on);
+  } catch { /* ignore */ }
 });
 
 // ---- fleet
 async function loadFleet() {
   accounts = await (await fetch(API + "/api/accounts")).json();
+  buildFilterChips();
   renderFleet();
 }
+
+function buildFilterChips() {
+  const statuses = [...new Set(accounts.map((a) => a.status))].sort();
+  const blockers = [...new Set(accounts.map((a) => a.blocker))].sort();
+  const chip = (val, active, cur) =>
+    `<span class="fchip ${cur === val ? "active" : ""}" data-v="${val}">${val === "" ? "All" : cap(val)}</span>`;
+  $("#statuschips").innerHTML = `<span class="lbl">Status</span>` +
+    [""].concat(statuses).map((s) => chip(s, true, fStatus)).join("");
+  $("#blockerchips").innerHTML = `<span class="lbl">Blocker</span>` +
+    [""].concat(blockers).map((b) => chip(b, true, fBlocker)).join("");
+  $("#statuschips").querySelectorAll(".fchip").forEach((c) =>
+    c.addEventListener("click", () => { fStatus = c.dataset.v; renderFleet(); }));
+  $("#blockerchips").querySelectorAll(".fchip").forEach((c) =>
+    c.addEventListener("click", () => { fBlocker = c.dataset.v; renderFleet(); }));
+}
+
+function filteredAccounts() {
+  const q = search.trim().toLowerCase();
+  return accounts.filter((a) => {
+    if (fStatus && a.status !== fStatus) return false;
+    if (fBlocker && a.blocker !== fBlocker) return false;
+    if (q && !(a.name.toLowerCase().includes(q) || a.id.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
 function renderFleet() {
-  const rows = [...accounts].sort((a, b) => {
+  // keep chip active states in sync without full rebuild
+  $("#statuschips").querySelectorAll(".fchip").forEach((c) => c.classList.toggle("active", c.dataset.v === fStatus));
+  $("#blockerchips").querySelectorAll(".fchip").forEach((c) => c.classList.toggle("active", c.dataset.v === fBlocker));
+
+  const rows = filteredAccounts().sort((a, b) => {
     let x = a[sortKey], y = b[sortKey];
     if (typeof x === "string") { x = x || ""; y = y || ""; return sortDesc ? y.localeCompare(x) : x.localeCompare(y); }
     x = Number(x || 0); y = Number(y || 0);
     return sortDesc ? y - x : x - y;
   });
+
+  const inoperative = accounts.filter((a) => a.status === "inoperative").length;
+  $("#fleetcount").textContent = `${accounts.length} accounts · ${inoperative} inoperative`;
+
+  if (rows.length === 0) {
+    $("#fleetbody").innerHTML = `<tr class="emptyrow"><td colspan="9">No accounts match the current filters.</td></tr>`;
+    return;
+  }
+
   $("#fleetbody").innerHTML = rows.map((a) => `
-    <tr data-id="${a.id}" class="${selected === a.id ? "sel" : ""}">
+    <tr data-id="${a.id}" class="${selected === a.id ? "sel" : ""} ${a.opted_out ? "dim" : ""}">
       <td>${a.id}</td>
-      <td>${a.name}</td>
-      <td>${a.language}</td>
+      <td>${escapeHtml(a.name)}${a.opted_out ? `<span class="optbadge">opted out</span>` : ""}</td>
+      <td>${langName(a.language)}</td>
       <td>${a.phone_type === "smartphone" ? "smart" : "feature"}</td>
       <td class="num">${a.months_since_txn}</td>
       <td class="num">${rupee(a.balance_inr)}</td>
@@ -312,15 +491,17 @@ function renderFleet() {
       <td>${riskBar(a.risk_score)}</td>
       <td>${statusChip(a.status)}</td>
     </tr>`).join("");
-  $("#fleetbody").querySelectorAll("tr").forEach((tr) =>
+  $("#fleetbody").querySelectorAll("tr[data-id]").forEach((tr) =>
     tr.addEventListener("click", () => selectAccount(tr.dataset.id)));
 }
+
 $("#fleet thead").addEventListener("click", (e) => {
   const th = e.target.closest("th"); if (!th) return;
   const k = th.dataset.k;
   if (k === sortKey) sortDesc = !sortDesc; else { sortKey = k; sortDesc = true; }
   renderFleet();
 });
+$("#search").addEventListener("input", (e) => { search = e.target.value; renderFleet(); });
 
 // ---- journey panel
 async function selectAccount(id) {
@@ -332,37 +513,42 @@ async function selectAccount(id) {
 
 function signalRow(k, v) { return `<div class="row"><span class="k">${k}</span><span>${v}</span></div>`; }
 
+function dbtBadge(a) {
+  if (!a.dbt_linked) return `<span class="dbtbadge none">not linked</span>`;
+  if (a.dbt_interrupted) return `<span class="dbtbadge interrupted">interrupted</span>`;
+  return `<span class="dbtbadge linked">linked ✓</span>`;
+}
+
 function renderJourney(d) {
   const a = d.account;
-  const dbt = a.dbt_linked ? (a.dbt_interrupted ? "interrupted" : "linked ✓") : "not linked";
   const finalState = a.status;
   const isTerminal = ["reactivated", "manual_review", "opted_out", "halted"].includes(finalState);
-
   const banner = isTerminal ? bannerHTML(finalState) : "";
+  const runDisabled = a.opted_out || killed;
+  const runTitle = killed ? "Disabled — kill switch is active" : (a.opted_out ? "Customer opted out" : "");
 
   $("#jbody").innerHTML = `
-    <div style="font-size:16px;font-weight:700;margin-bottom:2px">${a.name}</div>
-    <div style="color:var(--muted);font-size:12px;margin-bottom:12px">${a.id} · ${a.state} · ${cap(a.blocker)}</div>
+    <div class="jname">${escapeHtml(a.name)}</div>
+    <div class="jsub">${a.id} · ${escapeHtml(a.state)} · ${cap(a.blocker)}</div>
     ${banner}
     <div class="signals">
-      ${signalRow("Language", a.language)}
+      ${signalRow("Language", langName(a.language))}
       ${signalRow("Phone", a.phone_type)}
       ${signalRow("Months silent", a.months_since_txn)}
       ${signalRow("Balance", rupee(a.balance_inr))}
-      ${signalRow("KYC age (mo)", a.kyc_age_months)}
+      ${signalRow("KYC age", a.kyc_age_months + " mo")}
       ${signalRow("Risk", a.risk_score)}
-      ${signalRow("DBT", dbt)}
+      ${signalRow("DBT", dbtBadge(a))}
       ${signalRow("Consent", a.opted_out ? "opted out" : "granted")}
     </div>
     <div class="actions">
-      <button class="primary" id="runbtn" ${a.opted_out ? "disabled" : ""}>Run agent</button>
+      <button class="primary" id="runbtn" ${runDisabled ? "disabled" : ""} title="${runTitle}">Run agent</button>
       <button class="ghost" id="optbtn" ${a.opted_out ? "disabled" : ""}>Opt out</button>
     </div>
-    <div class="timeline" id="timeline"></div>`;
+    <div id="livewrap"></div>
+    <div id="history"></div>`;
 
-  // Replay historical events so the panel isn't empty on re-select.
-  for (const e of d.events) appendEvent(e.step, e.detail || {}, e.attempt);
-  for (const m of d.messages) { /* messages are rendered inline with ACT below */ }
+  renderHistory(d.events);
 
   $("#runbtn").addEventListener("click", () => runJourney(a.id));
   $("#optbtn").addEventListener("click", () => optOut(a.id));
@@ -372,8 +558,58 @@ function bannerHTML(state) {
   const cls = state === "reactivated" ? "reactivated"
     : state === "manual_review" ? "manual_review" : "other";
   const label = { reactivated: "✓ Reactivated", manual_review: "⚠ Manual review",
-    opted_out: "Opted out", halted: "Halted" }[state] || cap(state);
+    opted_out: "Opted out", halted: "Halted — kill switch" }[state] || cap(state);
   return `<div class="banner ${cls}">${label}</div>`;
+}
+
+// ---- audit trail: persisted events grouped into runs (a new PERCEIVE = new run)
+function groupRuns(events) {
+  const runs = [];
+  for (const e of events) {
+    if (e.step === "PERCEIVE" || runs.length === 0) runs.push([]);
+    runs[runs.length - 1].push(e);
+  }
+  return runs;
+}
+
+// terminal step of a run -> a status-ish colour + label for the group header
+function runOutcome(run) {
+  const steps = run.map((e) => e.step);
+  if (steps.includes("REACTIVATED")) return { state: "reactivated", label: "Reactivated" };
+  if (steps.includes("MANUAL_REVIEW")) return { state: "manual_review", label: "Manual review" };
+  if (steps.includes("OPTED_OUT")) return { state: "opted_out", label: "Opted out" };
+  if (steps.includes("HALTED")) return { state: "halted", label: "Halted" };
+  return { state: "at_risk", label: "In progress" };
+}
+
+function fmtTime(ts) {
+  if (!ts) return "";
+  const dt = new Date(ts);
+  if (isNaN(dt)) return "";
+  return dt.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function renderHistory(events) {
+  const host = $("#history");
+  if (!host) return;
+  if (!events || events.length === 0) { host.innerHTML = ""; return; }
+  const runs = groupRuns(events);
+  let html = `<div class="section-h">Audit trail · ${runs.length} run${runs.length > 1 ? "s" : ""}</div>`;
+  runs.forEach((run, i) => {
+    const out = runOutcome(run);
+    const open = i === runs.length - 1 ? "open" : "";
+    const when = fmtTime(run[0] && run[0].ts);
+    html += `<details class="rungroup" ${open}>
+      <summary>
+        <span class="rdot" style="background:${statusColor(out.state)}"></span>
+        <span class="rtitle">Run ${i + 1}</span>
+        <span style="color:var(--muted)">· ${out.label}</span>
+        <span class="rmeta">${when}</span>
+      </summary>
+      <div class="timeline">${run.map((e) => eventHTML(e.step, e.detail || {}, e.attempt)).join("")}</div>
+    </details>`;
+  });
+  host.innerHTML = html;
 }
 
 // human-readable one-liner per step
@@ -402,24 +638,31 @@ function detailLine(step, d) {
   }
 }
 
-let msgCache = {};   // message_id -> body, filled from detail view
-function appendEvent(step, d, attempt) {
-  const tl = $("#timeline"); if (!tl) return;
+// Build event markup (used by both audit trail and live stream)
+function eventHTML(step, d, attempt) {
   const att = attempt || (d && d.attempt) || 1;
   const line = detailLine(step, d);
   let extra = "";
   if (step === "ACT" && d && d.body) {
     extra = `<div class="bubble">${escapeHtml(d.body)}</div>`;
     if (d.audio_path) {
-      extra += `<audio controls preload="none" src="/audio/${encodeURIComponent(d.audio_path)}" style="width:100%;margin-top:6px;height:34px;"></audio>`;
+      extra += `<audio controls preload="none" src="/audio/${encodeURIComponent(d.audio_path)}"></audio>`;
     }
   }
-  const el = document.createElement("div");
-  el.className = "ev";
-  el.innerHTML = `
+  return `<div class="ev">
     <div class="head"><span class="step">${step}</span><span class="att">a${att}</span></div>
     ${line ? `<div class="detail">${escapeHtml(line)}</div>` : ""}
-    ${extra}`;
+    ${extra}</div>`;
+}
+
+// live-stream append into #livewrap timeline, with a pulse on the newest node
+function appendLive(step, d, attempt) {
+  const tl = $("#livetl"); if (!tl) return;
+  tl.querySelectorAll(".ev.pulse").forEach((n) => n.classList.remove("pulse"));
+  const wrap = document.createElement("div");
+  wrap.innerHTML = eventHTML(step, d, attempt);
+  const el = wrap.firstElementChild;
+  el.classList.add("pulse");
   tl.appendChild(el);
   el.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
@@ -430,14 +673,15 @@ function escapeHtml(s) {
 
 // ---- live run over SSE
 function runJourney(id) {
-  if (streaming) return;
+  if (streaming || killed) return;
   streaming = true;
   const btn = $("#runbtn"); const opt = $("#optbtn");
   btn.disabled = true; if (opt) opt.disabled = true;
   btn.textContent = "Running…";
-  // clear any historical/replayed events for a fresh live run
-  $("#timeline").innerHTML = "";
+  // remove any terminal banner + collapse persisted history during the live run
   const existingBanner = $("#jbody .banner"); if (existingBanner) existingBanner.remove();
+  $("#history").innerHTML = "";
+  $("#livewrap").innerHTML = `<div class="section-h">Live run</div><div class="timeline" id="livetl"></div>`;
 
   const es = new EventSource(API + "/api/accounts/" + id + "/run");
   const STEPS = ["PERCEIVE","DIAGNOSE","CONSENT_CHECK","PLAN","ACT","AWAIT_RESPONSE",
@@ -445,7 +689,7 @@ function runJourney(id) {
   STEPS.forEach((step) => {
     es.addEventListener(step, (e) => {
       const p = JSON.parse(e.data);
-      appendEvent(p.step || step, p.detail || {}, p.attempt);
+      appendLive(p.step || step, p.detail || {}, p.attempt);
     });
   });
   es.addEventListener("done", async (e) => {
@@ -453,23 +697,23 @@ function runJourney(id) {
     es.close();
     streaming = false;
     btn.textContent = "Run agent";
-    // final banner
-    const jb = $("#jbody");
-    const b = document.createElement("div");
-    b.innerHTML = bannerHTML(p.final_state);
-    jb.insertBefore(b.firstElementChild, $("#jbody .signals"));
-    // refresh metrics + this account's fleet row, then re-render selection
-    await loadMetrics();
+    // stop the pulse on the last live node
+    const last = $("#livetl .ev.pulse"); if (last) last.classList.remove("pulse");
+    // refresh metrics (flash) + fleet, then re-render the whole selection so the
+    // live view folds into the persisted audit trail.
+    await loadMetrics(true);
     await loadFleet();
-    // re-enable buttons based on refreshed opt-out state
-    const fresh = accounts.find((a) => a.id === id);
-    btn.disabled = fresh ? !!fresh.opted_out : false;
-    if (opt) opt.disabled = fresh ? !!fresh.opted_out : false;
+    if (selected === id) {
+      const d = await (await fetch(API + "/api/accounts/" + id)).json();
+      renderJourney(d);
+    }
   });
   es.onerror = () => {
     es.close(); streaming = false;
-    btn.disabled = false; if (opt) opt.disabled = false;
     btn.textContent = "Run agent";
+    const acc = accounts.find((a) => a.id === id);
+    const dis = killed || (acc ? !!acc.opted_out : false);
+    btn.disabled = dis; if (opt) opt.disabled = acc ? !!acc.opted_out : false;
   };
 }
 
@@ -482,6 +726,8 @@ async function optOut(id) {
 // ---- boot
 (async function init() {
   await Promise.all([loadMetrics(), loadKill(), loadFleet()]);
+  // auto-refresh metrics every 15s (skip while a run is streaming to avoid double flash)
+  metricsTimer = setInterval(() => { if (!streaming) loadMetrics(); }, 15000);
 })();
 </script>
 </body>

@@ -38,6 +38,18 @@ _AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/audio", StaticFiles(directory=str(_AUDIO_DIR)), name="audio")
 
 
+@app.on_event("startup")
+def _ensure_fleet():
+    # Fresh deploys (ephemeral disk) boot with a seeded, rule-scored fleet.
+    models.init_db()
+    if not models.list_accounts(limit=1):
+        from api import rules, seed
+
+        seed.seed()
+        for account in models.list_accounts():
+            models.update_account(account["id"], **rules.apply_rules(account))
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
