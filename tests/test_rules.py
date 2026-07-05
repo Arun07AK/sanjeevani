@@ -1,6 +1,12 @@
 import pytest
 
-from api.rules import classify_blocker, risk_score, account_status, apply_rules
+from api.rules import (
+    classify_blocker,
+    contact_constraints,
+    risk_score,
+    account_status,
+    apply_rules,
+)
 
 
 def _acc(**over):
@@ -36,22 +42,40 @@ LAKSHMI = _acc(
 @pytest.mark.parametrize(
     "acc,expected",
     [
+        # the four v2 causes
         (_acc(duplicate_suspect=1), "duplicate"),
         (_acc(never_transacted=1), "never_first_txn"),
         (_acc(kyc_age_months=96), "stale_kyc"),
-        (_acc(phone_type="feature"), "feature_phone_only"),
-        (_acc(language="te"), "language_barrier"),
-        (_acc(), "unknown"),
-        # priority conflicts
+        (_acc(), "disengaged"),
+        # the catch-all: valid KYC, customer went quiet (language is NOT a cause)
+        (_acc(language="te", phone_type="smartphone", kyc_age_months=0), "disengaged"),
+        (_acc(language="hi", phone_type="smartphone", kyc_age_months=0), "disengaged"),
+        # a feature phone is NOT a cause; fresh KYC + quiet -> disengaged
+        (_acc(phone_type="feature"), "disengaged"),
+        # priority conflicts (first match wins)
         (_acc(duplicate_suspect=1, kyc_age_months=120), "duplicate"),
         (_acc(never_transacted=1, phone_type="feature"), "never_first_txn"),
         (_acc(kyc_age_months=120, phone_type="feature"), "stale_kyc"),
-        (_acc(language="te", phone_type="smartphone", kyc_age_months=0), "language_barrier"),
-        (_acc(language="hi", phone_type="smartphone", kyc_age_months=0), "unknown"),
     ],
 )
 def test_classify_blocker(acc, expected):
     assert classify_blocker(acc) == expected
+
+
+@pytest.mark.parametrize(
+    "acc,expected",
+    [
+        # feature phone implies no WhatsApp (seed invariant: feature => whatsapp 0)
+        (_acc(phone_type="feature", whatsapp_registered=0),
+         ["feature_phone", "no_whatsapp"]),
+        # smartphone, not on WhatsApp
+        (_acc(phone_type="smartphone", whatsapp_registered=0), ["no_whatsapp"]),
+        # smartphone on WhatsApp -> no constraints
+        (_acc(phone_type="smartphone", whatsapp_registered=1), []),
+    ],
+)
+def test_contact_constraints(acc, expected):
+    assert contact_constraints(acc) == expected
 
 
 @pytest.mark.parametrize(
@@ -96,3 +120,7 @@ def test_apply_rules_lakshmi():
         "blocker": "stale_kyc",
         "status": "inoperative",
     }
+
+
+def test_lakshmi_contact_constraints():
+    assert contact_constraints(LAKSHMI) == ["feature_phone", "no_whatsapp"]

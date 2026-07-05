@@ -5,7 +5,7 @@ from __future__ import annotations
 import random
 from collections import Counter
 
-from api import models
+from api import models, rules
 
 RNG = random.Random(42)
 
@@ -221,9 +221,14 @@ def build_fleet() -> tuple[list[dict], list[str]]:
 
 
 def _summary(accounts: list[dict], persona_tags: list[str]) -> str:
-    lines = ["", f"Seeded {len(accounts)} accounts", "", "Persona (attribute-derived label)   count"]
-    for _, _, tag in PERSONA_BUILDERS:
-        lines.append(f"  {tag:<32}{persona_tags.count(tag):>4}")
+    # Report causes as diagnosed by the rules engine (v2): the old
+    # language_barrier / feature_phone_only personas now report as
+    # `disengaged` unless another cause applies. persona_tags is retained
+    # for callers but no longer drives the labels shown here.
+    cause_counts = Counter(rules.classify_blocker(a) for a in accounts)
+    lines = ["", f"Seeded {len(accounts)} accounts", "", "Cause (rules-diagnosed)             count"]
+    for cause in ("stale_kyc", "disengaged", "never_first_txn", "duplicate"):
+        lines.append(f"  {cause:<32}{cause_counts.get(cause, 0):>4}")
     lines.append("")
     lines.append("Status                              count")
     status_counts = Counter(a["status"] for a in accounts)

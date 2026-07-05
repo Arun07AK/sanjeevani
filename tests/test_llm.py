@@ -56,7 +56,7 @@ def test_valid_plan_returned_as_is(with_key):
 def test_invalid_rail_for_account_falls_back(with_key):
     # feature phone cannot use vcip -> plan_journey_llm returns None
     acc = _acc(phone_type="feature", whatsapp_registered=0,
-               blocker="feature_phone_only")
+               blocker="stale_kyc")
     _patch_complete(with_key, lambda messages, schema=None:
                     _plan_json(channel="ivr_voice", rail="vcip"))
     assert llm.plan_journey_llm(acc, []) is None
@@ -105,3 +105,30 @@ def test_compose_returns_text_no_disclosure(with_key):
     # disclosure is agent.py's job, not the composer's
     for line in guardrails.DISCLOSURE.values():
         assert line not in body
+
+
+def test_disengaged_valid_plan_returned(with_key):
+    # a disengaged smartphone customer: yono_inb is a cause-correct rail
+    acc = _acc(blocker="disengaged", kyc_age_months=40)
+    _patch_complete(
+        with_key,
+        lambda messages, schema=None: _plan_json(
+            rail="yono_inb",
+            rationale="disengaged customer: yono_inb is the easiest path back.",
+        ),
+    )
+    plan = llm.plan_journey_llm(acc, [])
+    assert plan is not None
+    assert plan["rail"] == "yono_inb"
+    assert plan["lang"] == "te"
+
+
+# ---------------------------------------------------------------- doctrine
+
+def test_planner_doctrine_prohibits_atm_for_stale_kyc():
+    doctrine = llm._PLANNER_SYSTEM.lower()
+    assert "stale_kyc" in doctrine
+    assert "never atm" in doctrine  # explicit ATM prohibition for stale_kyc
+    # the retired v1 causes must be gone from the doctrine
+    assert "language_barrier" not in doctrine
+    assert "feature_phone_only" not in doctrine

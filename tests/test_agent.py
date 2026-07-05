@@ -64,7 +64,13 @@ def _force(monkeypatch, outcomes):
 
 def _force_bc(monkeypatch, success):
     def fake(account):
-        return {"outcome": "success" if success else "manual_review", "note": "forced bc"}
+        if success:
+            return {"outcome": "success", "visit_note": "forced bc visit note"}
+        return {
+            "outcome": "manual_review",
+            "visit_note": "forced bc attempt note",
+            "fail_note": "forced bc fail note",
+        }
 
     monkeypatch.setattr(channels, "simulate_bc_visit", fake)
     monkeypatch.setattr(agent, "simulate_bc_visit", fake, raising=False)
@@ -178,27 +184,41 @@ def test_wrong_rail_retry_picks_different_play(db, monkeypatch):
     assert key(plans[0]) != key(plans[1])
 
 
-def test_escalation_bc_success(db, monkeypatch):
+def test_escalation_bc_success_full_sequence(db, monkeypatch):
     _insert(id="ACC-T001", phone_type="smartphone", whatsapp_registered=1)
     _force(monkeypatch, ["failed", "failed", "failed"])
     _force_bc(monkeypatch, True)
     state = agent.run_journey("ACC-T001")
     assert state == "reactivated"
     steps = _steps("ACC-T001")
-    assert "ESCALATE" in steps
-    assert steps[-1] == "REACTIVATED"
+    # the full escalation narrative, in order, ending in reactivation
+    tail = [s for s in steps if s in (
+        "ESCALATE", "BC_ASSIGNED", "BC_VISIT", "VERIFY", "REACTIVATED", "MANUAL_REVIEW"
+    )]
+    assert tail == ["ESCALATE", "BC_ASSIGNED", "BC_VISIT", "VERIFY", "REACTIVATED"]
+    events = models.list_events("ACC-T001")
+    bc_assigned = next(e for e in events if e["step"] == "BC_ASSIGNED")
+    assert bc_assigned["detail"]["ticket_id"]
+    assert bc_assigned["detail"]["bc_name"]
+    verify = next(e for e in events if e["step"] == "VERIFY")
+    assert "re-KYC" in verify["detail"]["note"].lower() or "kyc" in verify["detail"]["note"].lower()
     assert models.get_account("ACC-T001")["status"] == "reactivated"
 
 
-def test_escalation_bc_fail_manual_review(db, monkeypatch):
+def test_escalation_bc_fail_manual_review_full_sequence(db, monkeypatch):
     _insert(id="ACC-T001", phone_type="smartphone", whatsapp_registered=1)
     _force(monkeypatch, ["failed", "failed", "failed"])
     _force_bc(monkeypatch, False)
     state = agent.run_journey("ACC-T001")
     assert state == "manual_review"
     steps = _steps("ACC-T001")
-    assert "ESCALATE" in steps
-    assert steps[-1] == "MANUAL_REVIEW"
+    tail = [s for s in steps if s in (
+        "ESCALATE", "BC_ASSIGNED", "BC_VISIT", "VERIFY", "REACTIVATED", "MANUAL_REVIEW"
+    )]
+    assert tail == ["ESCALATE", "BC_ASSIGNED", "BC_VISIT", "MANUAL_REVIEW"]
+    events = models.list_events("ACC-T001")
+    mr = next(e for e in events if e["step"] == "MANUAL_REVIEW")
+    assert mr["detail"]["note"]  # concrete fail narrative present
 
 
 def test_opt_out(db, monkeypatch):
@@ -235,7 +255,16 @@ def test_duplicate_goes_straight_to_escalation(db, monkeypatch):
     steps = _steps("ACC-T001")
     assert "ACT" not in steps
     assert "PLAN" not in steps
-    assert "ESCALATE" in steps
+    # full BC narrative even on the duplicate fast-path
+    tail = [s for s in steps if s in (
+        "ESCALATE", "BC_ASSIGNED", "BC_VISIT", "VERIFY", "REACTIVATED"
+    )]
+    assert tail == ["ESCALATE", "BC_ASSIGNED", "BC_VISIT", "VERIFY", "REACTIVATED"]
+    events = models.list_events("ACC-T001")
+    escalate = next(e for e in events if e["step"] == "ESCALATE")
+    assert escalate["detail"]["reason"] == "duplicate"
+    verify = next(e for e in events if e["step"] == "VERIFY")
+    assert "consolidat" in verify["detail"]["note"].lower()
 
 
 def test_disclosure_appended_once_in_language(db, monkeypatch):
@@ -245,3 +274,75 @@ def test_disclosure_appended_once_in_language(db, monkeypatch):
     body = models.list_messages("ACC-T001")[0]["body"]
     assert body.count(guardrails.DISCLOSURE["te"]) == 1
     assert body.endswith(guardrails.DISCLOSURE["te"])
+
+
+# ---------------------------------------------------------------- v2 causes
+
+def test_diagnose_carries_constraints(db, monkeypatch):
+    # feature phone + no WhatsApp -> both constraints surface in DIAGNOSE
+    _insert(id="ACC-T001", phone_type="feature", whatsapp_registered=0)
+    _force_bc(monkeypatch, True)
+    agent.run_journey("ACC-T001")
+    events = models.list_events("ACC-T001")
+    diag = next(e for e in events if e["step"] == "DIAGNOSE")
+    assert diag["detail"]["blocker"] == "stale_kyc"
+    assert "feature_phone" in diag["detail"]["constraints"]
+    assert "no_whatsapp" in diag["detail"]["constraints"]
+
+
+def test_stale_kyc_never_plans_atm_smartphone(db, monkeypatch):
+    # stale_kyc smartphone: force all 3 attempts to fail so the planner tries
+    # every play; rail 'atm' must never appear (atm does not refresh KYC).
+    _insert(id="ACC-T001", phone_type="smartphone", whatsapp_registered=1,
+            kyc_age_months=120, never_transacted=0, duplicate_suspect=0)
+    _force(monkeypatch, ["failed", "failed", "failed"])
+    _force_bc(monkeypatch, True)
+    agent.run_journey("ACC-T001")
+    plans = [e["detail"]["plan"] for e in models.list_events("ACC-T001")
+             if e["step"] == "PLAN"]
+    assert len(plans) == 3
+    assert all(p["rail"] != "atm" for p in plans)
+    assert all(p["rail"] in ("vcip", "yono_inb", "bc_visit") for p in plans)
+
+
+def test_stale_kyc_never_plans_atm_feature_phone(db, monkeypatch):
+    # stale_kyc feature phone: only cause-correct rail is bc_visit; never atm.
+    _insert(id="ACC-T001", phone_type="feature", whatsapp_registered=0,
+            kyc_age_months=120, never_transacted=0, duplicate_suspect=0)
+    _force(monkeypatch, ["failed", "failed", "failed"])
+    _force_bc(monkeypatch, True)
+    agent.run_journey("ACC-T001")
+    plans = [e["detail"]["plan"] for e in models.list_events("ACC-T001")
+             if e["step"] == "PLAN"]
+    assert len(plans) == 3
+    assert all(p["rail"] != "atm" for p in plans)
+    assert all(p["rail"] == "bc_visit" for p in plans)
+
+
+def test_disengaged_plans_engagement_rail(db, monkeypatch):
+    # valid KYC, transacted, not duplicate -> disengaged; nudge rails only.
+    _insert(id="ACC-T001", phone_type="smartphone", whatsapp_registered=1,
+            kyc_age_months=40, never_transacted=0, duplicate_suspect=0,
+            dbt_interrupted=1)
+    _force(monkeypatch, ["success"])
+    agent.run_journey("ACC-T001")
+    events = models.list_events("ACC-T001")
+    diag = next(e for e in events if e["step"] == "DIAGNOSE")
+    assert diag["detail"]["blocker"] == "disengaged"
+    plan = next(e for e in events if e["step"] == "PLAN")["detail"]["plan"]
+    assert plan["rail"] in ("yono_inb", "atm")
+    # disengaged nudge with interrupted DBT names the benefit restart
+    body = models.list_messages("ACC-T001")[0]["body"]
+    assert "DBT" in body
+
+
+def test_never_first_txn_message_no_kyc_language(db, monkeypatch):
+    _insert(id="ACC-T001", phone_type="smartphone", whatsapp_registered=1,
+            never_transacted=1, kyc_age_months=40, duplicate_suspect=0)
+    _force(monkeypatch, ["success"])
+    agent.run_journey("ACC-T001")
+    events = models.list_events("ACC-T001")
+    diag = next(e for e in events if e["step"] == "DIAGNOSE")
+    assert diag["detail"]["blocker"] == "never_first_txn"
+    plan = next(e for e in events if e["step"] == "PLAN")["detail"]["plan"]
+    assert plan["rail"] in ("atm", "yono_inb")

@@ -1,59 +1,90 @@
-# Sanjeevani Loop Contract (binds agent.py, channels.py, llm.py)
+# Sanjeevani Loop Contract v2 (binds rules.py, agent.py, channels.py, llm.py, dashboard)
 
-## Channels (outreach) and rails (re-KYC destination)
+## v2 change (domain-model fix)
+
+v1 conflated dormancy CAUSES with CONTACT CONSTRAINTS. v2 separates them:
+- **Cause** = why the account is dormant/inoperative. Diagnosed by rules.py, stored in `accounts.blocker`.
+- **Contact constraints** = how the customer can be reached. Derived on the fly, never stored, never called a blocker.
+Rails must FIX the cause; channels must RESPECT the constraints; message language ALWAYS equals the account language.
+
+## Causes (rules.classify_blocker — deterministic, priority order, first match wins)
+
+1. `duplicate` — duplicate_suspect == 1 (needs human consolidation)
+2. `never_first_txn` — never_transacted == 1 (account never activated; fix = first customer-led transaction)
+3. `stale_kyc` — kyc_age_months >= 96 (account locked pending re-KYC; fix = a re-KYC rail)
+4. `disengaged` — everything else (valid KYC, customer went quiet; fix = a reason to transact + easiest path; DBT re-link when interrupted)
+
+`unknown` no longer exists. `language_barrier` and `feature_phone_only` no longer exist as causes.
+
+## Contact constraints (rules.contact_constraints(account) -> list[str], pure)
+
+- `feature_phone` — phone_type == 'feature' (no app, no V-CIP, no WhatsApp)
+- `no_whatsapp` — whatsapp_registered == 0
+Language is not a constraint; it is a standing rule: every message in the account's language.
+
+## Channels and rails
 
 | Channel | Requires |
 |---|---|
-| `whatsapp` | `whatsapp_registered=1` |
+| `whatsapp` | not `no_whatsapp` |
 | `ivr_voice` | any phone |
 | `sms` | any phone |
-| `bc_ticket` | terminal escalation only |
+| `bc_ticket` | escalation only |
 
-| Rail | Requires | Fixes |
+| Rail | Requires | Fixes (cause-correct for) |
 |---|---|---|
-| `yono_inb` | smartphone | no-change KYC refresh, first-txn guidance |
-| `vcip` | smartphone | full re-KYC (video) |
-| `atm` | any | no-change KYC, first txn |
-| `bc_visit` | any | full re-KYC, duplicates, unreachable (RBI 12 Jun 2025 amendment) |
+| `vcip` | smartphone | stale_kyc (full video re-KYC) |
+| `yono_inb` | smartphone | stale_kyc (no-change self-update) · never_first_txn (first txn) · disengaged |
+| `atm` | any | never_first_txn (first txn) · disengaged. **NEVER stale_kyc — an ATM transaction does not refresh KYC.** |
+| `bc_visit` | any | stale_kyc · duplicate · anything when unreachable (RBI 12 Jun 2025 amendment) |
 
-## Blocker → ideal play (what the customer simulator rewards)
+## Ideal plays by cause (best-first; filter by channel/rail validity per account)
 
-| Blocker | Ideal channel | Ideal rail | Notes |
-|---|---|---|---|
-| `stale_kyc` + smartphone | whatsapp/ivr | `vcip` | yono_inb = partial credit |
-| `stale_kyc` + feature | ivr_voice | `bc_visit` | atm = partial |
-| `never_first_txn` | whatsapp/ivr | `atm` or `yono_inb` | message must explain the ONE action |
-| `language_barrier` | any | any | **message lang MUST equal account language** — else mismatch |
-| `feature_phone_only` | `ivr_voice` or `sms` | `atm` or `bc_visit` | whatsapp = mismatch |
-| `duplicate` | — | `bc_ticket` directly | needs human consolidation |
+- `stale_kyc` + smartphone: whatsapp/ivr → `vcip` (best), `yono_inb` (workable, no-change), `bc_visit` (workable)
+- `stale_kyc` + feature_phone: ivr_voice/sms → `bc_visit` (ONLY cause-correct rail; vcip/yono unavailable)
+- `never_first_txn`: whatsapp/ivr/sms → `atm` (best) or `yono_inb` (smartphone); message explains the ONE first transaction
+- `disengaged`: whatsapp/ivr/sms → `yono_inb` (smartphone) or `atm`; message = warm nudge + what restarts (DBT when dbt_interrupted)
+- `duplicate`: no outreach attempts — straight to escalation
 
-## Customer simulator (channels.py)
+## Customer simulator (channels.simulate_response)
 
 `simulate_response(account, plan, attempt) -> {'outcome': 'success'|'no_response'|'failed', 'note': str}`
-- P(success): perfect match (channel valid + ideal rail + lang == account language) = 0.70; partial (valid channel, workable rail) = 0.35; mismatch = 0.05.
-- RNG: `random.Random(f"{account_id}:{attempt}")` — reproducible demos, different accounts behave differently.
-- BC visit (escalation): P(success)=0.9, else terminal `manual_review`.
+- P(success): valid channel + cause-CORRECT best rail = 0.70; cause-correct but secondary rail = 0.35; cause-INCORRECT rail (e.g. atm for stale_kyc) = 0.05.
+- RNG `random.Random(f"{account_id}:{attempt}")` — reproducible.
+- Notes narrate realistically, naming what the customer did or didn't do.
 
-## Loop state machine (agent.py) — every transition = one journey_event
+## Loop state machine (agent.run_journey) — every transition = one journey_event
 
 ```
-PERCEIVE → DIAGNOSE → CONSENT_CHECK → PLAN → ACT → AWAIT_RESPONSE → RE_EVALUATE
-   ↑                                    └──── retry (attempt+1, max 3) ────┘
-RE_EVALUATE: success → REACTIVATED (status='reactivated', dbt_interrupted=0)
-             attempts exhausted → ESCALATE (bc_ticket) → REACTIVATED | MANUAL_REVIEW
-Kill-switch checked BEFORE every step → HALTED event, loop aborts.
-opted_out=1 at CONSENT_CHECK (or set mid-run) → OPTED_OUT event, loop aborts.
+PERCEIVE → DIAGNOSE → CONSENT_CHECK → [PLAN → ACT → AWAIT_RESPONSE → RE_EVALUATE] ×3
+success → REACTIVATED (status='reactivated', dbt_interrupted=0)
+attempts exhausted (or cause=duplicate after consent) → ESCALATION SEQUENCE:
+  ESCALATE {to: bc_ticket, reason: cause}
+  → BC_ASSIGNED {ticket_id, bc_name}            (BC name from a small pool, seeded by account id)
+  → BC_VISIT {note: what the BC concretely did — e.g. "BC completed tablet V-CIP re-KYC at
+     the customer's home and collected the pending KYC documents" / duplicate consolidation}
+  → success: VERIFY {note: "Re-KYC updated in core banking; inoperative flag cleared"} → REACTIVATED
+  → failure: MANUAL_REVIEW {note: concrete reason — customer unavailable / documents missing}
+BC visit P(success)=0.9, RNG f"{account_id}:bc".
+Kill-switch checked BEFORE every step → HALTED. opted_out → OPTED_OUT at CONSENT_CHECK.
 ```
 
-## Planner interface (template now, LLM in Task #5 — same signature)
+## Event vocabulary (dashboard renders all of these)
 
-`plan_journey(account: dict, history: list[dict]) -> {'channel': str, 'rail': str, 'lang': str, 'rationale': str}`
-- Template planner: implements the ideal-play table above; on retry, picks next-best untried play.
-- LLM planner (llm.py): same dict via OpenAI structured outputs; hard-validated against allowed channels/rails; invalid → fall back to template.
+`PERCEIVE, DIAGNOSE, CONSENT_CHECK, PLAN, ACT, AWAIT_RESPONSE, RE_EVALUATE, ESCALATE, BC_ASSIGNED, BC_VISIT, VERIFY, REACTIVATED, MANUAL_REVIEW, OPTED_OUT, HALTED`
+- DIAGNOSE detail now carries `{risk_score, blocker (the cause), status, constraints: [...]}`.
+- ACT detail carries `{message_id, channel, body, audio_path}` (unchanged).
 
-`compose_message(account, plan) -> str` — template now, LLM later. EVERY message ends with the AI-disclosure line: `"[AI-sahayak from SBI — reply STOP to opt out, HUMAN for a bank officer]"` (translated per lang). Appended by agent.py, not the composer — so no path can omit it.
+## Planner interface (unchanged signature; template and LLM implement v2 doctrine)
 
-## Events vocabulary (dashboard renders these)
+`plan_journey(account, history) -> {'channel','rail','lang','rationale'}`
+- lang always == account language; rationale names the CAUSE and why the rail fixes it
+  (and may mention a constraint as the reason for the channel choice — never as the cause).
+- agent.py validates channel/rail; invalid → template fallback. Disclosure appended by agent.py only.
 
-`PERCEIVE, DIAGNOSE, CONSENT_CHECK, PLAN, ACT, AWAIT_RESPONSE, RE_EVALUATE, ESCALATE, REACTIVATED, MANUAL_REVIEW, OPTED_OUT, HALTED`
-detail JSON always includes `attempt`; PLAN includes the full plan dict; ACT includes message id + channel; AWAIT_RESPONSE includes outcome + note.
+## Dashboard implications
+
+- The fleet table and signals panel show the cause chip (4 causes) + small constraint tags
+  (feature phone / no WhatsApp) as separate visual elements — constraints must not look like causes.
+- Timeline renders the 3 new escalation steps; REACTIVATED after VERIFY keeps the keyhole moment.
+- Filters: cause filter now has 4 values; add nothing for constraints (search still works).

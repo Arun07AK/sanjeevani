@@ -4,21 +4,32 @@ Pure functions over plain account dicts — no DB, no models at import time.
 Account dict keys: months_since_txn, months_since_open, never_transacted (0/1),
 kyc_age_months, balance_inr, dbt_linked, dbt_interrupted, duplicate_suspect,
 phone_type ('smartphone'|'feature'), language, whatsapp_registered.
+
+v2 separates dormancy CAUSES (why the account is dormant — classify_blocker)
+from CONTACT CONSTRAINTS (how to reach the customer — contact_constraints).
+Language is never a cause and never a constraint; it is a standing rule.
 """
 
 
 def classify_blocker(account: dict) -> str:
+    """Diagnose the dormancy CAUSE. Priority order, first match wins."""
     if account["duplicate_suspect"] == 1:
         return "duplicate"
     if account["never_transacted"] == 1:
         return "never_first_txn"
     if account["kyc_age_months"] >= 96:
         return "stale_kyc"
+    return "disengaged"
+
+
+def contact_constraints(account: dict) -> list[str]:
+    """Derive CONTACT CONSTRAINTS (never stored, never a cause). Order fixed."""
+    constraints = []
     if account["phone_type"] == "feature":
-        return "feature_phone_only"
-    if account["language"] not in ("hi", "en"):
-        return "language_barrier"
-    return "unknown"
+        constraints.append("feature_phone")
+    if not account["whatsapp_registered"]:
+        constraints.append("no_whatsapp")
+    return constraints
 
 
 def risk_score(account: dict) -> int:
@@ -52,12 +63,12 @@ if __name__ == "__main__":
     from api import models
 
     accounts = models.list_accounts()
-    blockers = Counter()
+    causes = Counter()
     for account in accounts:
         result = apply_rules(account)
         models.update_account(account["id"], **result)
-        blockers[result["blocker"]] += 1
+        causes[result["blocker"]] += 1
 
     print(f"Processed {len(accounts)} accounts")
-    for blocker, n in blockers.most_common():
-        print(f"  {blocker}: {n}")
+    for cause, n in causes.most_common():
+        print(f"  {cause}: {n}")

@@ -320,6 +320,32 @@
     text-transform: uppercase; letter-spacing: 0.4px; color: var(--ink-soft);
     background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 2px 7px; white-space: nowrap;
   }
+
+  /* ---- cause chip: exactly 4 causes, 4 hues (disengaged reads neutral) ---- */
+  .cause {
+    display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono);
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+    border-radius: var(--radius-sm); padding: 2px 8px 2px 7px; white-space: nowrap;
+    color: var(--c-ink, var(--ink-soft)); background: var(--c-tint, var(--panel));
+    border: 1px solid var(--c-line, var(--line-strong));
+  }
+  .cause::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c-ink, var(--muted)); flex: none; }
+  .cause.stale_kyc       { --c-ink: var(--indigo); --c-tint: var(--indigo-tint-2); --c-line: var(--indigo-line); }
+  .cause.never_first_txn { --c-ink: var(--azure-deep); --c-tint: var(--azure-tint); --c-line: var(--azure-line); }
+  .cause.duplicate       { --c-ink: var(--magenta); --c-tint: var(--magenta-tint); --c-line: var(--magenta-line); }
+  .cause.disengaged      { --c-ink: var(--muted); --c-tint: var(--panel); --c-line: var(--line-strong); }
+
+  /* ---- constraint tags: ghost/outline, never mistaken for a cause ---- */
+  .constraints { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .ctag {
+    display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono);
+    font-size: 9.5px; font-weight: 500; letter-spacing: 0.3px; text-transform: none;
+    color: var(--muted); background: transparent;
+    border: 1px dashed var(--line-strong); border-radius: 999px; padding: 1px 8px; white-space: nowrap;
+  }
+  .ctag svg { width: 10px; height: 10px; flex: none; opacity: 0.85; }
+  td .constraints { margin-top: 4px; }
+  :root[data-material="glass"] .ctag { border-color: rgba(120,124,144,0.45); }
   .stag { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ink-soft); white-space: nowrap; }
   .stag .sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--sc, var(--muted)); flex: none; box-shadow: 0 0 0 3px var(--sc-tint, transparent); }
   .optbadge {
@@ -357,6 +383,9 @@
   .signals .row:nth-last-child(-n+2) { border-bottom: none; }
   .signals .k { color: var(--muted); font-size: 11.5px; }
   .signals .row span:last-child { font-weight: 500; text-align: right; }
+  /* full-width row for the cause chip + constraint tags */
+  .signals .row.wide { grid-column: 1 / -1; border-right: none; align-items: center; }
+  .signals .row.wide .sig-val { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; }
 
   .dbtbadge { display: inline-block; padding: 1px 7px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; }
   .dbtbadge.interrupted { background: var(--indigo-tint); color: var(--indigo); }
@@ -426,6 +455,15 @@
   .ev.key .keyhole { display: inline-flex; width: 19px; height: 19px; color: var(--green); flex: none; animation: unlock 0.75s cubic-bezier(0.2, 0.9, 0.3, 1.5) both; }
   @keyframes unlock { 0% { transform: scale(0.4) rotate(-18deg); opacity: 0; } 55% { transform: scale(1.16) rotate(0deg); opacity: 1; } 100% { transform: scale(1) rotate(0deg); } }
   @keyframes keynode { 0% { box-shadow: 0 0 0 3px var(--ground), 0 0 0 3px rgba(30, 127, 79, 0.55); } 100% { box-shadow: 0 0 0 3px var(--ground), 0 0 0 13px rgba(30, 127, 79, 0); } }
+
+  /* ---- human Business Correspondent steps: person-driven, indigo (not agent azure) ---- */
+  .ev.human::before { background: var(--indigo); border-color: var(--indigo); }
+  .ev.human .humanico { display: inline-flex; width: 14px; height: 14px; color: var(--indigo); flex: none; }
+  .ev.human .step { color: var(--indigo); }
+  .ev.human .bctag {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #fff; background: var(--indigo); border-radius: 999px; padding: 1px 7px; line-height: 1.5;
+  }
   /* ================= Tweaks panel ================= */
   .tweaks { position: fixed; right: 20px; bottom: 20px; z-index: 300; font-family: var(--font-sans); }
   .tweaks[data-open="false"] .tw-panel { display: none; }
@@ -702,9 +740,42 @@ const LANG_NAME = {
 };
 const langName = (c) => LANG_NAME[c] || (c || "—");
 
-// Blocker → a single muted small-caps text tag (no rainbow chips).
-function blockerChip(b) {
-  return `<span class="btag">${cap(b)}</span>`;
+// ---- causes vs contact constraints (v2 domain model)
+// Cause = why the account is dormant (stored in account.blocker). Exactly 4.
+const CAUSE_LABEL = {
+  stale_kyc: "Stale KYC",
+  never_first_txn: "Never Transacted",
+  duplicate: "Duplicate",
+  disengaged: "Disengaged",
+};
+const CAUSES = Object.keys(CAUSE_LABEL);
+const causeLabel = (b) => CAUSE_LABEL[b] || cap(b);
+
+// Cause → a hued chip (4 hues; disengaged reads neutral/muted).
+function causeChip(b) {
+  const known = CAUSE_LABEL[b] ? b : "";
+  return `<span class="cause ${known}">${causeLabel(b)}</span>`;
+}
+
+// Contact constraints are derived client-side from account fields — never stored,
+// never a cause. Ghost/outline tags, visually distinct from cause chips.
+const PHONE_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+const NOWA_ICON = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21a9 9 0 1 0-8-4.9L3 21l4.9-1A9 9 0 0 0 12 21Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 5 L19 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+
+// Derive constraints from account fields (phone_type, whatsapp_registered).
+function accountConstraints(a) {
+  const out = [];
+  if (a.phone_type === "feature") out.push({ key: "feature_phone", label: "feature phone", icon: PHONE_ICON });
+  if (a.whatsapp_registered === 0 || a.whatsapp_registered === false)
+    out.push({ key: "no_whatsapp", label: "no WhatsApp", icon: NOWA_ICON });
+  return out;
+}
+function constraintTags(a) {
+  const cs = accountConstraints(a);
+  if (!cs.length) return "";
+  return `<span class="constraints">` +
+    cs.map((c) => `<span class="ctag" title="contact constraint">${c.icon}${c.label}</span>`).join("") +
+    `</span>`;
 }
 
 const STATUS_COLOR = {
@@ -807,13 +878,14 @@ async function loadFleet() {
 
 function buildFilterChips() {
   const statuses = [...new Set(accounts.map((a) => a.status))].sort();
-  const blockers = [...new Set(accounts.map((a) => a.blocker))].sort();
-  const chip = (val, active, cur) =>
-    `<span class="fchip ${cur === val ? "active" : ""}" data-v="${val}">${val === "" ? "All" : cap(val)}</span>`;
+  const chip = (val, cur, label) =>
+    `<span class="fchip ${cur === val ? "active" : ""}" data-v="${val}">${val === "" ? "All" : label}</span>`;
   $("#statuschips").innerHTML = `<span class="lbl">Status</span>` +
-    [""].concat(statuses).map((s) => chip(s, true, fStatus)).join("");
+    [""].concat(statuses).map((s) => chip(s, fStatus, cap(s))).join("");
+  // Blocker = cause: fixed 4 causes, in priority order, with proper labels.
   $("#blockerchips").innerHTML = `<span class="lbl">Blocker</span>` +
-    [""].concat(blockers).map((b) => chip(b, true, fBlocker)).join("");
+    chip("", fBlocker, "All") +
+    CAUSES.map((b) => chip(b, fBlocker, causeLabel(b))).join("");
   $("#statuschips").querySelectorAll(".fchip").forEach((c) =>
     c.addEventListener("click", () => { fStatus = c.dataset.v; renderFleet(); }));
   $("#blockerchips").querySelectorAll(".fchip").forEach((c) =>
@@ -858,7 +930,7 @@ function renderFleet() {
       <td>${a.phone_type === "smartphone" ? "smart" : "feature"}</td>
       <td class="num">${a.months_since_txn}</td>
       <td class="num">${rupee(a.balance_inr)}</td>
-      <td>${blockerChip(a.blocker)}</td>
+      <td>${causeChip(a.blocker)}${constraintTags(a)}</td>
       <td>${riskBar(a.risk_score)}</td>
       <td>${statusChip(a.status)}</td>
     </tr>`).join("");
@@ -883,6 +955,7 @@ async function selectAccount(id) {
 }
 
 function signalRow(k, v) { return `<div class="row"><span class="k">${k}</span><span>${v}</span></div>`; }
+function signalRowWide(k, v) { return `<div class="row wide"><span class="k">${k}</span><span class="sig-val">${v}</span></div>`; }
 
 function dbtBadge(a) {
   if (!a.dbt_linked) return `<span class="dbtbadge none">not linked</span>`;
@@ -900,9 +973,10 @@ function renderJourney(d) {
 
   $("#jbody").innerHTML = `
     <div class="jhead"><span class="jname">${escapeHtml(a.name)}</span><span class="jid">${a.id}</span></div>
-    <div class="jsub">${escapeHtml(a.state)} · ${cap(a.blocker)}</div>
+    <div class="jsub">${escapeHtml(a.state)} · ${causeLabel(a.blocker)}</div>
     ${banner}
     <div class="signals">
+      ${signalRowWide("Cause", `${causeChip(a.blocker)}${constraintTags(a)}`)}
       ${signalRow("Language", langName(a.language))}
       ${signalRow("Phone", a.phone_type)}
       ${signalRow("Months silent", `<span class="mono">${a.months_since_txn}</span>`)}
@@ -995,7 +1069,12 @@ function detailLine(step, d) {
       const s = d.signals || {};
       return `silent ${s.months_since_txn}mo · KYC ${s.kyc_age_months}mo · ${s.phone_type}`;
     }
-    case "DIAGNOSE": return `blocker: ${cap(d.blocker)} · risk ${d.risk_score}`;
+    case "DIAGNOSE": {
+      const cons = Array.isArray(d.constraints) && d.constraints.length
+        ? " · constraints: " + d.constraints.map((c) => cap(c)).join(", ")
+        : "";
+      return `cause: ${causeLabel(d.blocker)} · risk ${d.risk_score}${cons}`;
+    }
     case "CONSENT_CHECK": return d.granted ? "consent granted" : "no consent";
     case "PLAN": {
       const p = d.plan || {};
@@ -1004,7 +1083,13 @@ function detailLine(step, d) {
     case "ACT": return `sent via ${d.channel} (msg #${d.message_id})`;
     case "AWAIT_RESPONSE": return d.note || d.outcome || "";
     case "RE_EVALUATE": return "outcome: " + cap(d.outcome);
-    case "ESCALATE": return `→ ${d.to} (${cap(d.reason)})`;
+    case "ESCALATE": return `→ ${d.to} (${causeLabel(d.reason)})`;
+    case "BC_ASSIGNED": {
+      const bc = d.bc_name ? `BC ${d.bc_name}` : "BC assigned";
+      return d.ticket_id ? `${bc} · ticket ${d.ticket_id}` : bc;
+    }
+    case "BC_VISIT": return d.note || "BC visited the customer";
+    case "VERIFY": return d.note || "verified in core banking";
     case "MANUAL_REVIEW": return d.note || "routed to manual review";
     case "REACTIVATED": return "account reactivated";
     case "OPTED_OUT": return d.reason || "customer opted out";
@@ -1012,6 +1097,10 @@ function detailLine(step, d) {
     default: return "";
   }
 }
+
+// steps carried out by a human Business Correspondent, not the agent
+const HUMAN_STEPS = new Set(["BC_ASSIGNED", "BC_VISIT", "VERIFY"]);
+const PERSON_SVG = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
 
 // Build event markup (used by both audit trail and live stream)
 function eventHTML(step, d, attempt) {
@@ -1023,6 +1112,14 @@ function eventHTML(step, d, attempt) {
     return `<div class="ev key">
       <div class="head"><span class="keyhole">${KEYHOLE_SVG}</span><span class="step">Reactivated</span><span class="att">a${att}</span></div>
       <div class="detail">${escapeHtml(line || "account reactivated")}</div>
+    </div>`;
+  }
+
+  // human Business Correspondent steps — a person icon + "BC" tag, distinct from agent steps
+  if (HUMAN_STEPS.has(step)) {
+    return `<div class="ev human">
+      <div class="head"><span class="humanico">${PERSON_SVG}</span><span class="step">${step}</span><span class="bctag">BC</span><span class="att">a${att}</span></div>
+      ${line ? `<div class="detail">${escapeHtml(line)}</div>` : ""}
     </div>`;
   }
 
@@ -1072,7 +1169,8 @@ function runJourney(id) {
 
   const es = new EventSource(API + "/api/accounts/" + id + "/run");
   const STEPS = ["PERCEIVE","DIAGNOSE","CONSENT_CHECK","PLAN","ACT","AWAIT_RESPONSE",
-    "RE_EVALUATE","ESCALATE","REACTIVATED","MANUAL_REVIEW","OPTED_OUT","HALTED"];
+    "RE_EVALUATE","ESCALATE","BC_ASSIGNED","BC_VISIT","VERIFY",
+    "REACTIVATED","MANUAL_REVIEW","OPTED_OUT","HALTED"];
   STEPS.forEach((step) => {
     es.addEventListener(step, (e) => {
       const p = JSON.parse(e.data);
