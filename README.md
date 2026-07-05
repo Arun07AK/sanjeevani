@@ -75,7 +75,7 @@ Covers the rules engine (table-driven), the full state machine (happy path, wron
 api/        models · seed · rules · agent (the loop) · channels (simulator) ·
             guardrails · llm · tts · main (FastAPI + SSE)
 dashboard/  single self-contained index.html — no frameworks, no CDNs
-docs/       loop-contract.md · api-contract.md · design.md · demo-script.md
+docs/       loop-contract.md · api-contract.md · design.md
 tests/      64 tests, hermetic
 ```
 
