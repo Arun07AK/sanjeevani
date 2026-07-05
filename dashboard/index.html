@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-material="glass" data-density="standard" data-accent="azure">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -23,7 +23,7 @@
     --indigo-deep: #1c0052;
     --indigo-lift: #3a109a;
     --indigo-tint: rgba(40, 0, 113, 0.06);
-    --indigo-tint-2: rgba(40, 0, 113, 0.11);
+    --indigo-tint-2: rgba(40, 0, 113, 0.1);
     --indigo-line: rgba(40, 0, 113, 0.22);
 
     --azure: #12a8e0;
@@ -288,7 +288,7 @@
     cursor: pointer; user-select: none; transition: all 0.15s; text-transform: capitalize;
   }
   .fchip:hover { color: var(--ink); border-color: var(--muted); }
-  .fchip.active { background: var(--indigo); color: #fff; border-color: var(--indigo); font-weight: 600; }
+  .fchip.active { background: var(--indigo); color: #fff; border-color: var(--azure); font-weight: 600; }
 
   /* ---- fleet table ---- */
   .tablewrap { overflow-x: auto; max-height: 70vh; }
@@ -426,6 +426,144 @@
   .ev.key .keyhole { display: inline-flex; width: 19px; height: 19px; color: var(--green); flex: none; animation: unlock 0.75s cubic-bezier(0.2, 0.9, 0.3, 1.5) both; }
   @keyframes unlock { 0% { transform: scale(0.4) rotate(-18deg); opacity: 0; } 55% { transform: scale(1.16) rotate(0deg); opacity: 1; } 100% { transform: scale(1) rotate(0deg); } }
   @keyframes keynode { 0% { box-shadow: 0 0 0 3px var(--ground), 0 0 0 3px rgba(30, 127, 79, 0.55); } 100% { box-shadow: 0 0 0 3px var(--ground), 0 0 0 13px rgba(30, 127, 79, 0); } }
+  /* ================= Tweaks panel ================= */
+  .tweaks { position: fixed; right: 20px; bottom: 20px; z-index: 300; font-family: var(--font-sans); }
+  .tweaks[data-open="false"] .tw-panel { display: none; }
+  .tweaks[data-open="true"] .tw-tab { display: none; }
+  .tw-tab {
+    display: inline-flex; align-items: center; gap: 9px; cursor: pointer;
+    background: rgba(40,0,113,0.82); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5);
+    color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 12px 17px;
+    font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px;
+    box-shadow: 0 12px 34px -10px rgba(23,23,42,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .tw-tab svg { width: 15px; height: 15px; }
+  .tw-panel {
+    width: 286px; overflow: hidden; border-radius: 18px;
+    background: rgba(255,255,255,0.64); -webkit-backdrop-filter: blur(26px) saturate(1.7); backdrop-filter: blur(26px) saturate(1.7);
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: 0 22px 60px -16px rgba(23,23,42,0.36), inset 0 1px 0 rgba(255,255,255,0.85);
+  }
+  .tw-head { display: flex; align-items: center; gap: 10px; padding: 13px 15px; background: rgba(40,0,113,0.92); color: #fff; }
+  .tw-head svg { width: 15px; height: 15px; }
+  .tw-title { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  .tw-x { margin-left: auto; background: transparent; border: none; color: rgba(255,255,255,0.75); font-size: 20px; line-height: 1; cursor: pointer; padding: 0 3px; }
+  .tw-x:hover { color: #fff; }
+  .tw-body { padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+  .tw-group { display: flex; flex-direction: column; gap: 8px; }
+  .tw-l { font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-soft); font-weight: 600; }
+  .tw-seg { display: grid; gap: 6px; }
+  .tw-seg.two { grid-template-columns: 1fr 1fr; }
+  .tw-seg.three { grid-template-columns: 1fr 1fr 1fr; }
+  .tw-seg button {
+    font: inherit; font-size: 11.5px; font-weight: 500; padding: 8px 4px; border-radius: 9px; cursor: pointer;
+    border: 1px solid rgba(120,124,144,0.4); background: rgba(255,255,255,0.5); color: var(--ink-soft); transition: all 0.13s;
+  }
+  .tw-seg button:hover { border-color: var(--muted); color: var(--ink); }
+  .tw-seg button.on { background: var(--indigo); border-color: var(--indigo); color: #fff; font-weight: 600; box-shadow: 0 4px 12px -4px rgba(40,0,113,0.5); }
+
+  /* ================= Tweak · density ================= */
+  :root[data-density="airy"] .metrics { margin: 10px 30px 20px; }
+  :root[data-density="airy"] .stat { min-height: 134px; padding: 23px 24px 20px; }
+  :root[data-density="airy"] .stat .v { font-size: 33px; }
+  :root[data-density="airy"] .masthead { padding: 30px 32px 20px; }
+  :root[data-density="airy"] .mh-title { font-size: 27px; }
+  :root[data-density="airy"] main { padding: 18px 30px 32px; gap: 24px; }
+  :root[data-density="airy"] th, :root[data-density="airy"] td { padding: 13px 14px; }
+  :root[data-density="airy"] .jbody { padding: 26px; }
+  :root[data-density="airy"] .ev { margin-bottom: 21px; }
+  :root[data-density="airy"] .panel > h2 { padding: 17px 22px; }
+
+  :root[data-density="compact"] .metrics { margin: 4px 22px 10px; }
+  :root[data-density="compact"] .stat { min-height: 82px; padding: 12px 15px 11px; gap: 8px; }
+  :root[data-density="compact"] .stat .v { font-size: 23px; }
+  :root[data-density="compact"] .masthead { padding: 14px 22px 9px; }
+  :root[data-density="compact"] .mh-title { font-size: 21px; }
+  :root[data-density="compact"] main { padding: 9px 22px 18px; gap: 13px; }
+  :root[data-density="compact"] th, :root[data-density="compact"] td { padding: 6px 10px; }
+  :root[data-density="compact"] .jbody { padding: 13px; }
+  :root[data-density="compact"] .ev { margin-bottom: 10px; }
+  :root[data-density="compact"] .panel > h2 { padding: 9px 13px; }
+  :root[data-density="compact"] .toolbar { padding: 10px 13px; gap: 8px; }
+  :root[data-density="compact"] .signals .row { padding: 6px 12px; }
+
+  /* ================= Tweak · agent accent ================= */
+  :root[data-accent="teal"] { --azure: #0bb8ad; --azure-deep: #0a897f; --azure-tint: rgba(11,184,173,0.1); --azure-line: rgba(11,184,173,0.34); }
+  :root[data-accent="violet"] { --azure: #6d4bff; --azure-deep: #5233d6; --azure-tint: rgba(109,75,255,0.1); --azure-line: rgba(109,75,255,0.34); }
+
+  /* ================= Tweak · material = liquid glass ================= */
+  :root[data-material="glass"] body {
+    background:
+      radial-gradient(700px 520px at 10% 4%, rgba(40,0,113,0.18), transparent 62%),
+      radial-gradient(620px 560px at 92% 10%, rgba(18,168,224,0.18), transparent 62%),
+      radial-gradient(580px 520px at 78% 96%, rgba(198,32,82,0.12), transparent 60%),
+      radial-gradient(560px 520px at 16% 92%, rgba(30,127,79,0.12), transparent 60%),
+      var(--panel);
+    background-attachment: fixed;
+  }
+  :root[data-material="glass"] .sidebar {
+    background: linear-gradient(177deg, rgba(58,16,154,0.6) 0%, rgba(40,0,113,0.74) 55%, rgba(28,0,82,0.82) 100%);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6);
+    box-shadow: inset -1px 0 0 rgba(255,255,255,0.16), inset 1px 0 0 rgba(255,255,255,0.05);
+  }
+  :root[data-material="glass"] .sidebar::before {
+    content: ""; position: absolute; top: -28%; left: -30%; width: 160%; height: 60%; z-index: 0;
+    background: radial-gradient(closest-side, rgba(255,255,255,0.2), rgba(255,255,255,0) 72%);
+    pointer-events: none;
+  }
+  :root[data-material="glass"] .metrics,
+  :root[data-material="glass"] .panel {
+    background: rgba(255,255,255,0.5);
+    -webkit-backdrop-filter: blur(22px) saturate(1.7); backdrop-filter: blur(22px) saturate(1.7);
+    border: 1px solid rgba(255,255,255,0.55); border-top: 1px solid rgba(255,255,255,0.7);
+    border-radius: 18px;
+    box-shadow: 0 16px 48px -14px rgba(23,23,42,0.22), inset 0 1px 0 rgba(255,255,255,0.85);
+  }
+  :root[data-material="glass"] .stat { border-left-color: rgba(255,255,255,0.5); }
+  :root[data-material="glass"] .stat.pay { background: rgba(40,0,113,0.72); border-left-color: rgba(255,255,255,0.4); }
+  :root[data-material="glass"] .panel > h2 { border-bottom-color: rgba(255,255,255,0.5); }
+  :root[data-material="glass"] .toolbar { background: rgba(255,255,255,0.26); border-bottom-color: rgba(255,255,255,0.5); }
+  :root[data-material="glass"] th { background: rgba(40,0,113,0.8); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  :root[data-material="glass"] th:hover { background: rgba(40,0,113,0.92); }
+  :root[data-material="glass"] tbody tr { border-bottom-color: rgba(120,124,144,0.16); }
+  :root[data-material="glass"] tbody tr:hover { background: rgba(40,0,113,0.06); }
+  :root[data-material="glass"] tbody tr.sel { background: rgba(40,0,113,0.1); }
+  :root[data-material="glass"] .search { background: rgba(255,255,255,0.5); border-color: rgba(255,255,255,0.6); border-radius: 11px; }
+  :root[data-material="glass"] .fchip { background: rgba(255,255,255,0.45); border-color: rgba(255,255,255,0.55); }
+  :root[data-material="glass"] .fchip.active { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+  :root[data-material="glass"] .mh-clock {
+    background: rgba(255,255,255,0.5); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.6); border-radius: 12px;
+  }
+  :root[data-material="glass"] .signals,
+  :root[data-material="glass"] .rungroup { background: rgba(255,255,255,0.34); border-color: rgba(255,255,255,0.5); border-radius: 13px; }
+  :root[data-material="glass"] .rungroup > summary { background: rgba(255,255,255,0.28); }
+  :root[data-material="glass"] .rungroup > summary:hover { background: rgba(255,255,255,0.42); }
+  :root[data-material="glass"] .signals .row { border-color: rgba(255,255,255,0.5); }
+  :root[data-material="glass"] .bubble {
+    background: rgba(18,168,224,0.16); border-color: rgba(255,255,255,0.4); border-left-color: var(--azure);
+    border-radius: 4px 13px 13px 13px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  :root[data-material="glass"] .voicenote { background: rgba(18,168,224,0.14); border-color: rgba(255,255,255,0.4); border-radius: 13px; }
+  :root[data-material="glass"] button.primary { box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 8px 22px -8px rgba(40,0,113,0.55); }
+  :root[data-material="glass"] button.ghost { background: rgba(255,255,255,0.5); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-color: rgba(255,255,255,0.6); }
+  :root[data-material="glass"] .banner { border-radius: 13px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5); }
+  :root[data-material="glass"] .agentstat,
+  :root[data-material="glass"] .rail-mod {
+    background: rgba(255,255,255,0.1);
+    -webkit-backdrop-filter: blur(9px) saturate(1.4); backdrop-filter: blur(9px) saturate(1.4);
+    border-color: rgba(255,255,255,0.24); border-radius: 15px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.24), 0 10px 26px -14px rgba(0,0,0,0.55);
+  }
+  :root[data-material="glass"] .rm-ring-c .rrv { text-shadow: 0 1px 8px rgba(0,0,0,0.25); }
+  :root[data-material="glass"] .kill {
+    background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.32); border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+  }
+  :root[data-material="glass"] .kill.on {
+    background: rgba(198,32,82,0.82); border-color: rgba(198,32,82,0.9);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 22px -8px rgba(198,32,82,0.55);
+  }
 </style>
 </head>
 <body>
@@ -987,6 +1125,78 @@ function tickClock() {
   await Promise.all([loadMetrics(), loadKill(), loadFleet()]);
   // auto-refresh metrics every 15s (skip while a run is streaming to avoid double flash)
   metricsTimer = setInterval(() => { if (!streaming) loadMetrics(); }, 15000);
+})();
+</script>
+<div class="tweaks" id="tweaks" data-open="true">
+  <button class="tw-tab" id="twtab" type="button"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="8" r="2.4" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="16" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>Tweaks</button>
+  <div class="tw-panel">
+    <div class="tw-head">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="8" r="2.4" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="16" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>
+      <span class="tw-title">Tweaks</span>
+      <button class="tw-x" id="twx" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="tw-body">
+      <div class="tw-group">
+        <div class="tw-l">Material</div>
+        <div class="tw-seg two" data-tw="material">
+          <button data-v="solid" type="button">Solid</button>
+          <button data-v="glass" type="button">Liquid glass</button>
+        </div>
+      </div>
+      <div class="tw-group">
+        <div class="tw-l">Density</div>
+        <div class="tw-seg three" data-tw="density">
+          <button data-v="airy" type="button">Airy</button>
+          <button data-v="standard" type="button">Standard</button>
+          <button data-v="compact" type="button">Compact</button>
+        </div>
+      </div>
+      <div class="tw-group">
+        <div class="tw-l">Agent accent</div>
+        <div class="tw-seg three" data-tw="accent">
+          <button data-v="azure" type="button">Azure</button>
+          <button data-v="teal" type="button">Teal</button>
+          <button data-v="violet" type="button">Violet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var TW = { material: "glass", density: "standard", accent: "azure" };
+  try { Object.assign(TW, JSON.parse(localStorage.getItem("sanjeevani.tweaks") || "{}")); } catch (e) {}
+  var root = document.documentElement;
+  var panel = document.getElementById("tweaks");
+  function apply() {
+    root.setAttribute("data-material", TW.material);
+    root.setAttribute("data-density", TW.density);
+    root.setAttribute("data-accent", TW.accent);
+    document.querySelectorAll(".tw-seg").forEach(function (seg) {
+      var k = seg.getAttribute("data-tw");
+      seg.querySelectorAll("button").forEach(function (b) {
+        b.classList.toggle("on", b.getAttribute("data-v") === TW[k]);
+      });
+    });
+    try { localStorage.setItem("sanjeevani.tweaks", JSON.stringify(TW)); } catch (e) {}
+  }
+  document.querySelectorAll(".tw-seg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      TW[b.parentNode.getAttribute("data-tw")] = b.getAttribute("data-v");
+      apply();
+    });
+  });
+  document.getElementById("twx").addEventListener("click", function () {
+    panel.setAttribute("data-open", "false");
+    try { localStorage.setItem("sanjeevani.tweaks.open", "false"); } catch (e) {}
+  });
+  document.getElementById("twtab").addEventListener("click", function () {
+    panel.setAttribute("data-open", "true");
+    try { localStorage.setItem("sanjeevani.tweaks.open", "true"); } catch (e) {}
+  });
+  try { if (localStorage.getItem("sanjeevani.tweaks.open") === "false") panel.setAttribute("data-open", "false"); } catch (e) {}
+  apply();
 })();
 </script>
 </body>
