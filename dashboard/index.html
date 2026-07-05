@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sanjeevani — Dormant Account Revival</title>
+<style>
+  :root {
+    --bg: #0a1e3f;
+    --surface: #16294e;
+    --ink: #eaf1ff;
+    --muted: #9fb4d6;
+    --green: #2ee6a6;
+    --saffron: #ffb547;
+    --red: #ff6b6b;
+    --line: rgba(159, 180, 214, 0.18);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  a { color: var(--green); }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 14px 22px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand h1 { font-size: 19px; margin: 0; letter-spacing: 0.3px; }
+  .brand .tag { color: var(--muted); font-size: 12px; }
+
+  .tiles { display: flex; gap: 12px; margin-left: auto; flex-wrap: wrap; }
+  .tile {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    min-width: 86px;
+    text-align: center;
+  }
+  .tile .v { font-size: 18px; font-weight: 700; }
+  .tile .l { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .tile.green .v { color: var(--green); }
+  .tile.saffron .v { color: var(--saffron); }
+
+  .kill {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted); cursor: pointer;
+    user-select: none;
+  }
+  .switch {
+    width: 40px; height: 22px; border-radius: 12px;
+    background: rgba(159,180,214,0.25); position: relative;
+    transition: background 0.2s;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--ink); transition: left 0.2s;
+  }
+  .kill.on .switch { background: var(--red); }
+  .kill.on .switch::after { left: 20px; }
+  .kill.on { color: var(--red); font-weight: 600; }
+
+  main {
+    display: grid;
+    grid-template-columns: minmax(560px, 1.35fr) minmax(360px, 1fr);
+    gap: 18px;
+    padding: 18px 22px;
+    align-items: start;
+  }
+  @media (max-width: 1040px) { main { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .panel > h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--muted); margin: 0; padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* fleet table */
+  .tablewrap { overflow-x: auto; max-height: 74vh; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; white-space: nowrap; }
+  th {
+    position: sticky; top: 0; background: var(--surface);
+    color: var(--muted); font-weight: 600; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    cursor: pointer; border-bottom: 1px solid var(--line);
+  }
+  th:hover { color: var(--ink); }
+  tbody tr { border-bottom: 1px solid var(--line); cursor: pointer; }
+  tbody tr:hover { background: rgba(46,230,166,0.06); }
+  tbody tr.sel { background: rgba(46,230,166,0.12); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .chip {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+  .risk { display: flex; align-items: center; gap: 6px; }
+  .riskbar { width: 60px; height: 7px; border-radius: 4px; background: rgba(159,180,214,0.2); overflow: hidden; }
+  .riskbar > i { display: block; height: 100%; border-radius: 4px; }
+
+  /* journey panel */
+  .jbody { padding: 14px 16px; }
+  .empty { color: var(--muted); text-align: center; padding: 40px 10px; }
+  .signals {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+    font-size: 12.5px; margin-bottom: 14px;
+  }
+  .signals .k { color: var(--muted); }
+  .signals .row { display: flex; justify-content: space-between; gap: 10px; }
+  .actions { display: flex; gap: 10px; margin-bottom: 16px; }
+  button {
+    font: inherit; font-weight: 600; font-size: 13px;
+    padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    border: 1px solid transparent; transition: opacity 0.15s, background 0.15s;
+  }
+  button.primary { background: var(--green); color: #062315; }
+  button.ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .banner {
+    padding: 10px 14px; border-radius: 8px; font-weight: 700;
+    margin-bottom: 14px; text-align: center; font-size: 14px;
+  }
+  .banner.reactivated { background: rgba(46,230,166,0.18); color: var(--green); }
+  .banner.manual_review { background: rgba(255,181,71,0.18); color: var(--saffron); }
+  .banner.other { background: rgba(159,180,214,0.15); color: var(--muted); }
+
+  .timeline { position: relative; padding-left: 20px; }
+  .timeline::before {
+    content: ""; position: absolute; left: 6px; top: 4px; bottom: 4px;
+    width: 2px; background: var(--line);
+  }
+  .ev {
+    position: relative; margin-bottom: 12px;
+    animation: fade 0.35s ease both;
+  }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .ev::before {
+    content: ""; position: absolute; left: -17px; top: 4px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 0 3px var(--surface);
+  }
+  .ev .head { display: flex; align-items: center; gap: 8px; }
+  .ev .step { font-weight: 700; font-size: 12px; letter-spacing: 0.4px; }
+  .ev .att {
+    font-size: 10px; color: var(--muted); border: 1px solid var(--line);
+    border-radius: 999px; padding: 0 6px;
+  }
+  .ev .detail { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .bubble {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 12px; margin-top: 6px; font-size: 12.5px;
+    white-space: pre-wrap; word-break: break-word;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>Sanjeevani</h1>
+    <span class="tag">Dormant-account revival agent · SBI</span>
+  </div>
+  <div class="tiles" id="tiles"></div>
+  <div class="kill" id="kill" title="Halt all agent runs">
+    <span id="killlabel">Kill-switch</span>
+    <span class="switch"></span>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Fleet</h2>
+    <div class="tablewrap">
+      <table id="fleet">
+        <thead>
+          <tr>
+            <th data-k="id">ID</th>
+            <th data-k="name">Name</th>
+            <th data-k="language">Lang</th>
+            <th data-k="phone_type">Phone</th>
+            <th data-k="months_since_txn" class="num">Silent</th>
+            <th data-k="balance_inr" class="num">₹ Balance</th>
+            <th data-k="blocker">Blocker</th>
+            <th data-k="risk_score">Risk</th>
+            <th data-k="status">Status</th>
+          </tr>
+        </thead>
+        <tbody id="fleetbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Journey</h2>
+    <div class="jbody" id="jbody">
+      <div class="empty">Select an account from the fleet to begin.</div>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+const API = "";
+const $ = (s, r = document) => r.querySelector(s);
+
+let accounts = [];
+let selected = null;
+let sortKey = "risk_score";
+let sortDesc = true;
+let streaming = false;
+
+// ---- formatting helpers
+const rupee = (n) => "₹" + Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+const cap = (s) => (s ? s.replace(/_/g, " ") : "—");
+
+// One hue per blocker for chips.
+const BLOCKER_HUE = {
+  stale_kyc: 205, never_first_txn: 275, language_barrier: 45,
+  feature_phone_only: 160, duplicate: 0, unknown: 220,
+};
+function blockerChip(b) {
+  const h = BLOCKER_HUE[b] ?? 220;
+  return `<span class="chip" style="background:hsla(${h},70%,55%,0.18);color:hsl(${h},75%,72%)">${cap(b)}</span>`;
+}
+
+const STATUS_COLOR = {
+  reactivated: "var(--green)", inoperative: "var(--red)",
+  at_risk: "var(--saffron)", manual_review: "var(--saffron)",
+  opted_out: "var(--muted)", halted: "var(--muted)", active: "var(--green)",
+};
+function statusChip(s) {
+  const c = STATUS_COLOR[s] || "var(--muted)";
+  return `<span class="chip" style="background:${c};color:#0a1e3f;filter:saturate(1.1)">${cap(s)}</span>`;
+}
+
+function riskBar(score) {
+  const s = Number(score || 0);
+  const color = s >= 70 ? "var(--red)" : s >= 40 ? "var(--saffron)" : "var(--green)";
+  return `<span class="risk"><span class="riskbar"><i style="width:${s}%;background:${color}"></i></span><span>${s}</span></span>`;
+}
+
+// ---- metrics + kill-switch
+async function loadMetrics() {
+  const m = await (await fetch(API + "/api/metrics")).json();
+  $("#tiles").innerHTML = `
+    <div class="tile"><div class="v">${m.total}</div><div class="l">Fleet</div></div>
+    <div class="tile"><div class="v">${m.inoperative}</div><div class="l">Inoperative</div></div>
+    <div class="tile green"><div class="v">${m.reactivated}</div><div class="l">Reactivated</div></div>
+    <div class="tile saffron"><div class="v">${rupee(m.payout_estimate_inr)}</div><div class="l">Payout est.</div></div>`;
+}
+
+async function loadKill() {
+  const { on } = await (await fetch(API + "/api/killswitch")).json();
+  setKillUI(on);
+}
+function setKillUI(on) {
+  const el = $("#kill");
+  el.classList.toggle("on", on);
+  $("#killlabel").textContent = on ? "KILL-SWITCH ON" : "Kill-switch";
+}
+$("#kill").addEventListener("click", async () => {
+  const on = !$("#kill").classList.contains("on");
+  const r = await fetch(API + "/api/killswitch", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ on }),
+  });
+  setKillUI((await r.json()).on);
+});
+
+// ---- fleet
+async function loadFleet() {
+  accounts = await (await fetch(API + "/api/accounts")).json();
+  renderFleet();
+}
+function renderFleet() {
+  const rows = [...accounts].sort((a, b) => {
+    let x = a[sortKey], y = b[sortKey];
+    if (typeof x === "string") { x = x || ""; y = y || ""; return sortDesc ? y.localeCompare(x) : x.localeCompare(y); }
+    x = Number(x || 0); y = Number(y || 0);
+    return sortDesc ? y - x : x - y;
+  });
+  $("#fleetbody").innerHTML = rows.map((a) => `
+    <tr data-id="${a.id}" class="${selected === a.id ? "sel" : ""}">
+      <td>${a.id}</td>
+      <td>${a.name}</td>
+      <td>${a.language}</td>
+      <td>${a.phone_type === "smartphone" ? "smart" : "feature"}</td>
+      <td class="num">${a.months_since_txn}</td>
+      <td class="num">${rupee(a.balance_inr)}</td>
+      <td>${blockerChip(a.blocker)}</td>
+      <td>${riskBar(a.risk_score)}</td>
+      <td>${statusChip(a.status)}</td>
+    </tr>`).join("");
+  $("#fleetbody").querySelectorAll("tr").forEach((tr) =>
+    tr.addEventListener("click", () => selectAccount(tr.dataset.id)));
+}
+$("#fleet thead").addEventListener("click", (e) => {
+  const th = e.target.closest("th"); if (!th) return;
+  const k = th.dataset.k;
+  if (k === sortKey) sortDesc = !sortDesc; else { sortKey = k; sortDesc = true; }
+  renderFleet();
+});
+
+// ---- journey panel
+async function selectAccount(id) {
+  selected = id;
+  renderFleet();
+  const d = await (await fetch(API + "/api/accounts/" + id)).json();
+  renderJourney(d);
+}
+
+function signalRow(k, v) { return `<div class="row"><span class="k">${k}</span><span>${v}</span></div>`; }
+
+function renderJourney(d) {
+  const a = d.account;
+  const dbt = a.dbt_linked ? (a.dbt_interrupted ? "interrupted" : "linked ✓") : "not linked";
+  const finalState = a.status;
+  const isTerminal = ["reactivated", "manual_review", "opted_out", "halted"].includes(finalState);
+
+  const banner = isTerminal ? bannerHTML(finalState) : "";
+
+  $("#jbody").innerHTML = `
+    <div style="font-size:16px;font-weight:700;margin-bottom:2px">${a.name}</div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:12px">${a.id} · ${a.state} · ${cap(a.blocker)}</div>
+    ${banner}
+    <div class="signals">
+      ${signalRow("Language", a.language)}
+      ${signalRow("Phone", a.phone_type)}
+      ${signalRow("Months silent", a.months_since_txn)}
+      ${signalRow("Balance", rupee(a.balance_inr))}
+      ${signalRow("KYC age (mo)", a.kyc_age_months)}
+      ${signalRow("Risk", a.risk_score)}
+      ${signalRow("DBT", dbt)}
+      ${signalRow("Consent", a.opted_out ? "opted out" : "granted")}
+    </div>
+    <div class="actions">
+      <button class="primary" id="runbtn" ${a.opted_out ? "disabled" : ""}>Run agent</button>
+      <button class="ghost" id="optbtn" ${a.opted_out ? "disabled" : ""}>Opt out</button>
+    </div>
+    <div class="timeline" id="timeline"></div>`;
+
+  // Replay historical events so the panel isn't empty on re-select.
+  for (const e of d.events) appendEvent(e.step, e.detail || {}, e.attempt);
+  for (const m of d.messages) { /* messages are rendered inline with ACT below */ }
+
+  $("#runbtn").addEventListener("click", () => runJourney(a.id));
+  $("#optbtn").addEventListener("click", () => optOut(a.id));
+}
+
+function bannerHTML(state) {
+  const cls = state === "reactivated" ? "reactivated"
+    : state === "manual_review" ? "manual_review" : "other";
+  const label = { reactivated: "✓ Reactivated", manual_review: "⚠ Manual review",
+    opted_out: "Opted out", halted: "Halted" }[state] || cap(state);
+  return `<div class="banner ${cls}">${label}</div>`;
+}
+
+// human-readable one-liner per step
+function detailLine(step, d) {
+  if (!d) return "";
+  switch (step) {
+    case "PERCEIVE": {
+      const s = d.signals || {};
+      return `silent ${s.months_since_txn}mo · KYC ${s.kyc_age_months}mo · ${s.phone_type}`;
+    }
+    case "DIAGNOSE": return `blocker: ${cap(d.blocker)} · risk ${d.risk_score}`;
+    case "CONSENT_CHECK": return d.granted ? "consent granted" : "no consent";
+    case "PLAN": {
+      const p = d.plan || {};
+      return `${p.channel} → ${p.rail}${p.rationale ? " · " + p.rationale : ""}`;
+    }
+    case "ACT": return `sent via ${d.channel} (msg #${d.message_id})`;
+    case "AWAIT_RESPONSE": return d.note || d.outcome || "";
+    case "RE_EVALUATE": return "outcome: " + cap(d.outcome);
+    case "ESCALATE": return `→ ${d.to} (${cap(d.reason)})`;
+    case "MANUAL_REVIEW": return d.note || "routed to manual review";
+    case "REACTIVATED": return "account reactivated";
+    case "OPTED_OUT": return d.reason || "customer opted out";
+    case "HALTED": return "kill-switch active — " + (d.where || "halted");
+    default: return "";
+  }
+}
+
+let msgCache = {};   // message_id -> body, filled from detail view
+function appendEvent(step, d, attempt) {
+  const tl = $("#timeline"); if (!tl) return;
+  const att = attempt || (d && d.attempt) || 1;
+  const line = detailLine(step, d);
+  let extra = "";
+  if (step === "ACT" && d && d.body) {
+    extra = `<div class="bubble">${escapeHtml(d.body)}</div>`;
+    if (d.audio_path) {
+      extra += `<audio controls preload="none" src="/audio/${encodeURIComponent(d.audio_path)}" style="width:100%;margin-top:6px;height:34px;"></audio>`;
+    }
+  }
+  const el = document.createElement("div");
+  el.className = "ev";
+  el.innerHTML = `
+    <div class="head"><span class="step">${step}</span><span class="att">a${att}</span></div>
+    ${line ? `<div class="detail">${escapeHtml(line)}</div>` : ""}
+    ${extra}`;
+  tl.appendChild(el);
+  el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+// ---- live run over SSE
+function runJourney(id) {
+  if (streaming) return;
+  streaming = true;
+  const btn = $("#runbtn"); const opt = $("#optbtn");
+  btn.disabled = true; if (opt) opt.disabled = true;
+  btn.textContent = "Running…";
+  // clear any historical/replayed events for a fresh live run
+  $("#timeline").innerHTML = "";
+  const existingBanner = $("#jbody .banner"); if (existingBanner) existingBanner.remove();
+
+  const es = new EventSource(API + "/api/accounts/" + id + "/run");
+  const STEPS = ["PERCEIVE","DIAGNOSE","CONSENT_CHECK","PLAN","ACT","AWAIT_RESPONSE",
+    "RE_EVALUATE","ESCALATE","REACTIVATED","MANUAL_REVIEW","OPTED_OUT","HALTED"];
+  STEPS.forEach((step) => {
+    es.addEventListener(step, (e) => {
+      const p = JSON.parse(e.data);
+      appendEvent(p.step || step, p.detail || {}, p.attempt);
+    });
+  });
+  es.addEventListener("done", async (e) => {
+    const p = JSON.parse(e.data);
+    es.close();
+    streaming = false;
+    btn.textContent = "Run agent";
+    // final banner
+    const jb = $("#jbody");
+    const b = document.createElement("div");
+    b.innerHTML = bannerHTML(p.final_state);
+    jb.insertBefore(b.firstElementChild, $("#jbody .signals"));
+    // refresh metrics + this account's fleet row, then re-render selection
+    await loadMetrics();
+    await loadFleet();
+    // re-enable buttons based on refreshed opt-out state
+    const fresh = accounts.find((a) => a.id === id);
+    btn.disabled = fresh ? !!fresh.opted_out : false;
+    if (opt) opt.disabled = fresh ? !!fresh.opted_out : false;
+  });
+  es.onerror = () => {
+    es.close(); streaming = false;
+    btn.disabled = false; if (opt) opt.disabled = false;
+    btn.textContent = "Run agent";
+  };
+}
+
+async function optOut(id) {
+  await fetch(API + "/api/accounts/" + id + "/optout", { method: "POST" });
+  await loadFleet();
+  await selectAccount(id);
+}
+
+// ---- boot
+(async function init() {
+  await Promise.all([loadMetrics(), loadKill(), loadFleet()]);
+})();
+</script>
+</body>
+</html>

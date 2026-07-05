@@ -146,8 +146,18 @@ def run_journey(account_id, planner=None, composer=None, on_event=None) -> str:
                 emit("HALTED", {"where": f"before_act_{attempt}"}, attempt)
                 return "halted"
             body = guardrails.append_disclosure(composer(account, plan), plan["lang"])
-            msg_id = models.insert_message(account_id, plan["channel"], plan["lang"], body)
-            emit("ACT", {"message_id": msg_id, "channel": plan["channel"]}, attempt)
+            audio_path = None
+            if plan["channel"] in ("ivr_voice", "whatsapp"):
+                from api import tts
+                audio_path = tts.synthesize(body, plan["lang"], account_id, attempt)
+            msg_id = models.insert_message(
+                account_id, plan["channel"], plan["lang"], body, audio_path=audio_path
+            )
+            emit(
+                "ACT",
+                {"message_id": msg_id, "channel": plan["channel"], "body": body, "audio_path": audio_path},
+                attempt,
+            )
 
             if killed():
                 emit("HALTED", {"where": f"before_await_{attempt}"}, attempt)
