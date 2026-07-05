@@ -165,11 +165,14 @@ def plan_journey_llm(account: dict, history: list[dict]) -> dict | None:
 def compose_message_llm(account: dict, plan: dict) -> str | None:
     if not available():
         return None
+    from api.agent import _ACTIONS
+
     facts = {
         "name": account["name"].split()[0],
         "language": account["language"],
         "blocker": account.get("blocker"),
         "rail": plan["rail"],
+        "the_one_action": _ACTIONS.get(plan["rail"], plan["rail"]),
         "dbt_interrupted": account.get("dbt_interrupted"),
     }
     user = (
